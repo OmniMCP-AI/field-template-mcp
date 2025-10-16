@@ -14,6 +14,7 @@ dependencies = [
     "python-dotenv>=1.1.1",
     "openai>=2.4.0",
     "mcp>=1.1.2",
+    "jsonschema>=4.25.1",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -41,4 +42,5 @@ py-modules = ["main"]
 dev-dependencies = [
     "isort>=7.0.0",
     "ruff>=0.14.0",
+    "pytest>=8.4.2",
 ]

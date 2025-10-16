@@ -1,0 +1,99 @@
+{
+  "tool_name": "extract_by_llm",
+  "description": "Extract specific fields from unstructured text using LLM semantic understanding",
+  "category": "extraction",
+  "version": "1.0.0",
+  "model_config": {
+    "provider": "anthropic",
+    "model": "claude-3-5-sonnet-20241022",
+    "temperature": 0.0,
+    "max_tokens": 1000
+  },
+  "prompt_templates": {
+    "system": "You are a data extraction expert. Your task is to extract specific fields from unstructured text.\n\nRules:\n- Extract exactly the fields specified\n- If a field is not found, use null\n- Return result as JSON object with field names as keys\n- Be accurate and precise in extraction",
+    "user": "Fields to extract: {fields}\n\nText:\n{text}\n\nExtracted data (as JSON):",
+    "structured_system": "You are a data extraction expert. Extract information according to the provided schema.\n\nRules:\n- Follow the schema structure exactly\n- Use correct data types (string, number, array, object, boolean)\n- If a field is not found and not required, you may omit it or use null\n- Ensure all required fields are present"
+  },
+  "parameters": {
+    "input": {
+      "type": "array",
+      "description": "List of items to extract from",
+      "required": true
+    },
+    "fields": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "List of field names to extract (required if response_format not provided)",
+      "required": false
+    },
+    "response_format": {
+      "type": "object",
+      "description": "JSON Schema for structured output (OpenAI-compatible)",
+      "required": false
+    },
+    "args": {
+      "type": "object",
+      "description": "Optional configuration",
+      "properties": {
+        "model": {"type": "string", "description": "Override default model"},
+        "temperature": {"type": "number", "description": "Override temperature"},
+        "max_tokens": {"type": "integer", "description": "Override max_tokens"},
+        "prompt": {"type": "string", "description": "Custom extraction instructions"}
+      },
+      "required": false
+    }
+  },
+  "validation": {
+    "oneOf_required": ["fields", "response_format"]
+  },
+  "output_format": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "properties": {
+        "id": {"type": ["integer", "string"]},
+        "result": {"type": ["object", "null"]},
+        "error": {"type": "string"}
+      },
+      "required": ["id"]
+    }
+  },
+  "examples": [
+    {
+      "description": "Multi-field extraction",
+      "input": {
+        "input": ["Article by Wade on 2025-10-12 about AI"],
+        "fields": ["author", "date", "topic"]
+      },
+      "output": [
+        {
+          "id": 0,
+          "result": {"author": "Wade", "date": "2025-10-12", "topic": "AI"}
+        }
+      ]
+    },
+    {
+      "description": "Structured output with arrays",
+      "input": {
+        "input": ["Article by Wade and Smith. Tags: AI, tech"],
+        "response_format": {
+          "type": "object",
+          "properties": {
+            "authors": {"type": "array", "items": {"type": "string"}},
+            "tags": {"type": "array", "items": {"type": "string"}}
+          },
+          "required": ["authors"]
+        }
+      },
+      "output": [
+        {
+          "id": 0,
+          "result": {
+            "authors": ["Wade", "Smith"],
+            "tags": ["AI", "tech"]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -197,7 +197,7 @@ Possible improvements:
 ### 1. Quick Smoke Test
 ```bash
 # Start server
-python main.py --transport streamable-http --port 8321
+python main.py --transport streamable-http --port 8322
 
 # In another terminal
 python test/test_mcp_client.py --env=local --test=hello
@@ -216,7 +216,7 @@ from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
 async def test():
-    url = "http://127.0.0.1:8321/mcp"
+    url = "http://127.0.0.1:8322/mcp"
     async with streamablehttp_client(url=url) as (read, write, _):
         async with ClientSession(read, write) as session:
             await session.initialize()

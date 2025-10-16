@@ -36,7 +36,7 @@ def summarize_text(text: str, max_words: int = 50) -> str:
   - `--test=hello` - Test hello tool only
   - `--test=summarize` - Test summarize_text tool only
 - ✅ Environment selection:
-  - `--env=local` - Test local server (127.0.0.1:8321)
+  - `--env=local` - Test local server (127.0.0.1:8322)
   - `--env=remote --url=<URL>` - Test remote server
 
 **Usage Example**:
@@ -116,7 +116,7 @@ OPENAI_BASE_URL=https://openrouter.ai/api/v1
 
 **Terminal 1 - Start Server:**
 ```bash
-python main.py --transport streamable-http --port 8321
+python main.py --transport streamable-http --port 8322
 ```
 
 **Terminal 2 - Run Tests:**
@@ -138,16 +138,16 @@ python test/test_mcp_client.py --env=local --test=summarize
 📋 Server Information:
    📦 Version: 1.0.0
    🌐 Transport: streamable-http
-   🔗 URL: http://0.0.0.0:8321
+   🔗 URL: http://0.0.0.0:8322
    🐍 Python: 3.11.x
 
 INFO - OpenAI client initialized successfully
-🚀 Starting server on http://0.0.0.0:8321
+🚀 Starting server on http://0.0.0.0:8322
 ```
 
 **Test Output:**
 ```
-🔗 Using local environment: http://127.0.0.1:8321
+🔗 Using local environment: http://127.0.0.1:8322
 🧪 Running test: all
 
 🚀 Testing Hello Tool
@@ -203,7 +203,7 @@ cp env.example .env
 # Edit .env and add your OPENAI_API_KEY
 
 # 2. Start server
-python main.py --transport streamable-http --port 8321
+python main.py --transport streamable-http --port 8322
 
 # 3. Test (in another terminal)
 python test/test_mcp_client.py --env=local --test=all

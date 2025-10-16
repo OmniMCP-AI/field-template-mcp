@@ -25,28 +25,44 @@ Similar to how the scraper plugin converts scraping templates into MCP tools, th
                             ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │                    MCP Server (main.py)                          │
-│  • Lists available field templates as tools                      │
-│  • Converts template config to MCP tool metadata                │
-│  • Validates input against input_schema                         │
+│  • Registers 3 core tools:                                       │
+│    - classify_by_llm                                            │
+│    - tag_by_llm                                                 │
+│    - extract_by_llm                                             │
+│  • Validates input against schemas                              │
+│  • Normalizes input format                                      │
 └───────────────────────────┬─────────────────────────────────────┘
                             │
-                            │ Execute template
+                            │ Execute tool
                             ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│            Template Service (template_service.py)                │
-│  • Loads template from config                                    │
-│  • Resolves field references {$field_name}                      │
-│  • Assembles prompt with user inputs                            │
-│  • Calls LLM with prompt and model config                       │
-│  • Validates output against output_schema                       │
+│               Tool Handlers (src/tools/)                         │
+│  • classify_by_llm_handler.py                                   │
+│  • tag_by_llm_handler.py                                        │
+│  • extract_by_llm_handler.py                                    │
+│                                                                  │
+│  Each handler:                                                   │
+│  • Normalizes input to {id, data} format                        │
+│  • Batch processes all items                                    │
+│  • Calls LLM via LLMClient                                      │
+│  • Returns {id, result, error} format                           │
 └───────────────────────────┬─────────────────────────────────────┘
                             │
-                            │ Return result
+                            │ LLM API calls
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                   LLM Client (llm_client.py)                     │
+│  • Provider abstraction (OpenAI, Anthropic, etc.)               │
+│  • Structured output support (JSON Schema)                      │
+│  • Error handling and retries                                   │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+                            │ Return results
                             ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │                    AI Agent / User                               │
-│  • Receives structured data                                      │
-│  • Uses result in workflow                                       │
+│  • Receives batch results with IDs                              │
+│  • Each result: {id, result, error?}                            │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -81,242 +97,705 @@ def example_tool(name: str) -> str:
 
 ---
 
-## Stage 1: Config-to-Tool Mechanism
+## Stage 1: Core MCP Tools Implementation
 
-**Goal:** Implement the core mechanism to read field template configs and dynamically generate MCP tools.
+**Goal:** Implement the 3 core MCP tools directly (no config files) following SPECIFICATION.md API design.
 
 ### Stage 1.0: Core Infrastructure
 
 **Tasks:**
-1. Create config directory structure
+1. Set up project structure
    ```
-   configs/
-   ├── templates/
-   │   ├── classify/
-   │   ├── tags/
-   │   ├── extract/
-   │   └── summarize/
-   └── schema.json (template schema definition)
-   ```
-
-2. Define template configuration schema
-   ```python
-   class FieldTemplate(BaseModel):
-       template_id: str
-       name: str
-       description: str
-       category: str  # classify, extract, generate, analyze
-       prompt_template: str
-       input_schema: Dict[str, Any]  # JSON Schema
-       output_schema: Dict[str, Any]  # JSON Schema
-       model_config: ModelConfig
-       field_references: List[str] = []  # {$field_name} patterns
+   src/
+   ├── tools/              # MCP tool implementations
+   ├── services/           # Business logic services
+   │   ├── llm_client.py
+   │   ├── input_normalizer.py
+   │   └── batch_processor.py
+   ├── models/             # Data models
+   └── utils/              # Helper utilities
+   tests/
+   └── tools/              # Tool-specific tests
    ```
 
-3. Create template loader service
+2. Define core data models
    ```python
-   class TemplateRegistry:
-       def load_templates(self, directory: str) -> List[FieldTemplate]
-       def get_template(self, template_id: str) -> FieldTemplate
-       def list_templates(self, category: str = None) -> List[FieldTemplate]
+   class InputItem(BaseModel):
+       id: Union[int, str]
+       data: Union[str, int, float, dict, bool, None]
+
+   class OutputItem(BaseModel):
+       id: Union[int, str]
+       result: Any
+       error: Optional[str] = None
+
+   class BatchProcessResult(BaseModel):
+       results: List[OutputItem]
+       metadata: ProcessMetadata
    ```
 
-4. Implement dynamic tool generation
+3. Implement input normalization service
    ```python
-   def create_mcp_tool_from_template(template: FieldTemplate):
-       """Convert template to MCP tool with proper schemas"""
-       # Generate function with input validation
-       # Add to MCP server dynamically
+   class InputNormalizer:
+       @staticmethod
+       def normalize(input: list) -> list[InputItem]:
+           """Convert simple list to {id, data} format"""
+           # ["text1", "text2"] → [{"id": 0, "data": "text1"}, ...]
+   ```
+
+4. Implement LLM client abstraction
+   ```python
+   class LLMClient:
+       async def chat(self, messages: list, model: str, **kwargs) -> str
+       async def structured_output(self, messages: list, schema: dict, model: str) -> dict
+   ```
+
+5. Register tools with FastMCP
+   ```python
+   @mcp.tool()
+   async def classify_by_llm(
+       input: list,
+       categories: list[str],
+       prompt: str = None,
+       args: dict = None
+   ) -> list[dict]:
+       # Implementation
    ```
 
 **Deliverables:**
-- `src/models/template.py` - Template data models
-- `src/services/template_registry.py` - Template loading and management
-- `src/services/template_executor.py` - Template execution logic
-- `configs/schema.json` - Template schema definition
+- `src/models/base.py` - Core data models
+- `src/services/llm_client.py` - LLM provider abstraction
+- `src/services/input_normalizer.py` - Input normalization
+- `src/services/batch_processor.py` - Batch processing
+- `main.py` - Updated with tool registrations
 
 **Test Criteria:**
-- Templates can be loaded from JSON files
-- Templates are converted to MCP tools
+- Tools are registered with FastMCP
 - Tools appear in MCP `list_tools` response
+- Input normalization works for both formats
+- LLM client can connect to provider
 
 ---
 
-### Stage 1.1: Basic Template Implementations
+### Stage 1.1: Basic MCP Tool Implementations
 
-**Goal:** Implement 4 simple field templates with hardcoded prompts.
+**Goal:** Implement 3 core MCP tools following the SPECIFICATION.md API design with batch processing.
 
-#### Template 1: `classify`
-```json
-{
-  "template_id": "classify_simple",
-  "name": "Simple Classification",
-  "description": "Classify input data into categories",
-  "category": "classify",
-  "prompt_template": "Classify the following text into one of these categories: {categories}\n\nText: {input_data}\n\nReturn only the category name.",
-  "input_schema": {
-    "type": "object",
-    "properties": {
-      "input_data": {"type": "string"},
-      "categories": {"type": "string"}
-    },
-    "required": ["input_data", "categories"]
-  },
-  "output_schema": {
-    "type": "object",
-    "properties": {
-      "category": {"type": "string"}
-    },
-    "required": ["category"]
-  },
-  "model_config": {
-    "model": "gpt-4o-mini",
-    "temperature": 0.1,
-    "max_tokens": 100
-  }
-}
+**Key Design Principles from SPECIFICATION.md:**
+- ✅ **Batch-first**: All operations process lists (not single items)
+- ✅ **ID tracking**: Input/output uses `{id, data/result}` format
+- ✅ **Consistent interface**: Uniform signature pattern across all operations
+- ✅ **Type flexibility**: Support heterogeneous input types
+
+---
+
+#### Tool 1: `classify_by_llm`
+
+**MCP Tool Name:** `classify_by_llm`
+
+**Description:** Classify each input into exactly ONE best-matching category from predefined options using LLM.
+
+**API Signature:**
+```python
+classify_by_llm(
+    input: list[dict | str | int | float],
+    categories: list[str],
+    prompt: str | None = None,
+    args: dict | None = None
+) -> list[dict]
 ```
 
-#### Template 2: `tags`
+**Input Schema:**
 ```json
 {
-  "template_id": "tags_extract",
-  "name": "Extract Tags",
-  "description": "Extract relevant tags from input data",
-  "category": "extract",
-  "prompt_template": "Extract relevant tags from the following text. Return as a JSON array of strings.\n\nText: {input_data}\n\nTags:",
-  "input_schema": {
-    "type": "object",
-    "properties": {
-      "input_data": {"type": "string"}
-    },
-    "required": ["input_data"]
-  },
-  "output_schema": {
-    "type": "object",
-    "properties": {
-      "tags": {
-        "type": "array",
-        "items": {"type": "string"}
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "input": {
+      "type": "array",
+      "description": "List of items to classify. Each item can be a string, number, or dict with {id, data} format",
+      "items": {
+        "oneOf": [
+          {"type": "string"},
+          {"type": "number"},
+          {"type": "object"}
+        ]
       }
     },
-    "required": ["tags"]
+    "categories": {
+      "type": "array",
+      "description": "List of possible categories (mutually exclusive)",
+      "items": {"type": "string"},
+      "minItems": 2
+    },
+    "prompt": {
+      "type": "string",
+      "description": "Optional instructions for classification context"
+    },
+    "args": {
+      "type": "object",
+      "properties": {
+        "model": {"type": "string", "default": "claude-3-5-sonnet"},
+        "temperature": {"type": "number", "default": 0},
+        "include_scores": {"type": "boolean", "default": false},
+        "allow_none": {"type": "boolean", "default": false}
+      }
+    }
   },
-  "model_config": {
-    "model": "gpt-4o-mini",
-    "temperature": 0.3,
-    "max_tokens": 200
+  "required": ["input", "categories"]
+}
+```
+
+**Output Schema:**
+```json
+{
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {"type": ["integer", "string"]},
+      "result": {"type": ["string", "object", "null"]},
+      "error": {"type": "string"}
+    },
+    "required": ["id"]
   }
 }
 ```
 
-#### Template 3: `extract_by_fields`
+---
+
+#### Tool 2: `tag_by_llm`
+
+**MCP Tool Name:** `tag_by_llm`
+
+**Description:** Apply multiple relevant tags from a predefined set to each input (non-mutually exclusive).
+
+**API Signature:**
+```python
+tag_by_llm(
+    input: list[dict | str | int | float],
+    tags: list[str],
+    prompt: str | None = None,
+    args: dict | None = None
+) -> list[dict]
+```
+
+**Input Schema:**
 ```json
 {
-  "template_id": "extract_fields",
-  "name": "Extract by Fields",
-  "description": "Extract specific fields from input data",
-  "category": "extract",
-  "prompt_template": "Extract the following fields from the text:\n\nFields to extract: {expected_fields}\n\nText: {input_data}\n\nReturn as JSON with the specified fields as keys.",
-  "input_schema": {
-    "type": "object",
-    "properties": {
-      "input_data": {"type": "string"},
-      "expected_fields": {
-        "type": "array",
-        "items": {"type": "string"}
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "input": {
+      "type": "array",
+      "description": "List of items to tag",
+      "items": {
+        "oneOf": [
+          {"type": "string"},
+          {"type": "number"},
+          {"type": "object"}
+        ]
       }
     },
-    "required": ["input_data", "expected_fields"]
+    "tags": {
+      "type": "array",
+      "description": "List of possible tags (can return 0-N tags per item)",
+      "items": {"type": "string"},
+      "minItems": 1
+    },
+    "prompt": {
+      "type": "string",
+      "description": "Optional instructions for tagging context"
+    },
+    "args": {
+      "type": "object",
+      "properties": {
+        "model": {"type": "string", "default": "claude-3-5-sonnet"},
+        "temperature": {"type": "number", "default": 0},
+        "max_tags": {"type": "integer", "description": "Maximum tags per item"},
+        "include_scores": {"type": "boolean", "default": false}
+      }
+    }
   },
-  "output_schema": {
+  "required": ["input", "tags"]
+}
+```
+
+**Output Schema:**
+```json
+{
+  "type": "array",
+  "items": {
     "type": "object",
     "properties": {
-      "data": {
+      "id": {"type": ["integer", "string"]},
+      "result": {
         "type": "array",
-        "items": {"type": "object"}
-      }
+        "items": {
+          "oneOf": [
+            {"type": "string"},
+            {
+              "type": "object",
+              "properties": {
+                "tag": {"type": "string"},
+                "score": {"type": "number"}
+              }
+            }
+          ]
+        }
+      },
+      "error": {"type": "string"}
     },
-    "required": ["data"]
-  },
-  "model_config": {
-    "model": "gpt-4o-mini",
-    "temperature": 0.2,
-    "max_tokens": 500
+    "required": ["id", "result"]
   }
 }
 ```
 
-#### Template 4: `summarize`
+---
+
+#### Tool 3: `extract_by_llm`
+
+**MCP Tool Name:** `extract_by_llm`
+
+**Description:** Extract specific fields from unstructured text using LLM semantic understanding.
+
+**API Signature:**
+```python
+extract_by_llm(
+    input: list[dict | str | int | float],
+    fields: list[str] | None = None,
+    response_format: dict | None = None,
+    args: dict | None = None
+) -> list[dict]
+```
+
+**Input Schema:**
 ```json
 {
-  "template_id": "summarize_simple",
-  "name": "Simple Summarization",
-  "description": "Summarize input data concisely",
-  "category": "summarize",
-  "prompt_template": "Summarize the following text concisely:\n\n{input_data}\n\nSummary:",
-  "input_schema": {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "input": {
+      "type": "array",
+      "description": "List of items to extract from",
+      "items": {
+        "oneOf": [
+          {"type": "string"},
+          {"type": "number"},
+          {"type": "object"}
+        ]
+      }
+    },
+    "fields": {
+      "type": "array",
+      "description": "List of field names to extract (required if response_format not provided)",
+      "items": {"type": "string"}
+    },
+    "response_format": {
+      "type": "object",
+      "description": "JSON Schema for structured output (OpenAI-compatible)"
+    },
+    "args": {
+      "type": "object",
+      "properties": {
+        "model": {"type": "string", "default": "claude-3-5-sonnet"},
+        "temperature": {"type": "number", "default": 0},
+        "max_tokens": {"type": "integer", "default": 1000},
+        "prompt": {"type": "string", "description": "Custom extraction instructions"}
+      }
+    }
+  },
+  "required": ["input"],
+  "oneOf": [
+    {"required": ["fields"]},
+    {"required": ["response_format"]}
+  ]
+}
+```
+
+**Output Schema:**
+```json
+{
+  "type": "array",
+  "items": {
     "type": "object",
     "properties": {
-      "input_data": {"type": "string"}
+      "id": {"type": ["integer", "string"]},
+      "result": {"type": ["object", "null"]},
+      "error": {"type": "string"}
     },
-    "required": ["input_data"]
-  },
-  "output_schema": {
-    "type": "object",
-    "properties": {
-      "summary": {"type": "string"}
-    },
-    "required": ["summary"]
-  },
-  "model_config": {
-    "model": "gpt-4o-mini",
-    "temperature": 0.5,
-    "max_tokens": 300
+    "required": ["id"]
   }
 }
 ```
+
+---
 
 **Implementation Tasks:**
-1. Create JSON files in `configs/templates/`
-2. Implement `TemplateExecutor.execute(template_id, inputs)`
-3. Add LLM client integration (OpenAI, Claude, etc.)
-4. Parse and validate LLM output against `output_schema`
 
-**Test Cases:**
+1. **Implement core MCP tool handlers** in `src/tools/`
+
+Each tool follows this pattern:
+
 ```python
-# Test classify
-result = execute_template("classify_simple", {
-    "input_data": "This is a great product!",
-    "categories": "positive, negative, neutral"
-})
-assert result["category"] in ["positive", "negative", "neutral"]
+# src/tools/classify_by_llm.py
 
-# Test tags
-result = execute_template("tags_extract", {
-    "input_data": "Machine learning and AI are transforming technology"
-})
-assert isinstance(result["tags"], list)
+from fastmcp import FastMCP
 
-# Test extract_by_fields
-result = execute_template("extract_fields", {
-    "input_data": "John Doe, age 30, lives in NYC",
-    "expected_fields": ["name", "age", "city"]
-})
-assert "name" in result["data"][0]
+@mcp.tool()
+async def classify_by_llm(
+    input: list,
+    categories: list[str],
+    prompt: str = None,
+    args: dict = None
+) -> list[dict]:
+    """
+    Classify each input into exactly ONE best-matching category.
 
-# Test summarize
-result = execute_template("summarize_simple", {
-    "input_data": "Long text here..."
-})
-assert isinstance(result["summary"], str)
+    Args:
+        input: List of items to classify (strings, numbers, or dicts with {id, data})
+        categories: List of possible categories (mutually exclusive)
+        prompt: Optional custom instructions for classification context
+        args: Optional config (model, temperature, include_scores, etc.)
+
+    Returns:
+        List of {id, result, error?} dicts
+
+    Example:
+        result = await classify_by_llm(
+            input=["Apple releases new iPhone", "Lakers win game"],
+            categories=["tech", "sports", "politics"]
+        )
+        # → [{"id": 0, "result": "tech"}, {"id": 1, "result": "sports"}]
+    """
+    # 1. Normalize input to {id, data} format
+    normalized = InputNormalizer.normalize(input)
+
+    # 2. Extract config from args
+    model = args.get("model", "claude-3-5-sonnet") if args else "claude-3-5-sonnet"
+    include_scores = args.get("include_scores", False) if args else False
+
+    # 3. Build prompt
+    system_prompt = "You are a classification expert. Classify text into exactly ONE category."
+    if prompt:
+        system_prompt += f"\n\n{prompt}"
+
+    # 4. Process batch with error handling
+    results = []
+    for item in normalized:
+        try:
+            user_prompt = f"Categories: {', '.join(categories)}\n\nText: {item['data']}"
+
+            # Call LLM
+            response = await llm_client.chat(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                model=model
+            )
+
+            # Parse result
+            category = response.strip()
+
+            if include_scores:
+                result = {"category": category, "score": 0.95}  # Mock score
+            else:
+                result = category
+
+            results.append({"id": item["id"], "result": result})
+
+        except Exception as e:
+            results.append({"id": item["id"], "result": None, "error": str(e)})
+
+    return results
+```
+
+2. **Implement input normalization service**
+
+```python
+# src/services/input_normalizer.py
+
+class InputNormalizer:
+    @staticmethod
+    def normalize(input: list) -> list[dict]:
+        """
+        Convert various input formats to standard {id, data} format.
+
+        Examples:
+            ["text1", "text2"] → [{"id": 0, "data": "text1"}, {"id": 1, "data": "text2"}]
+            [{"id": "custom", "data": "text"}] → [{"id": "custom", "data": "text"}]
+        """
+        if not isinstance(input, list):
+            raise TypeError("Input must be a list")
+
+        normalized = []
+        auto_id_counter = 0
+
+        for item in input:
+            # Already in {id, data} format
+            if isinstance(item, dict) and "id" in item and "data" in item:
+                normalized.append(item)
+
+            # Dict without proper format
+            elif isinstance(item, dict):
+                # If has id but no data, treat whole dict as data
+                if "id" in item:
+                    normalized.append({"id": item["id"], "data": item})
+                else:
+                    # No id, assign auto id
+                    normalized.append({"id": auto_id_counter, "data": item})
+                    auto_id_counter += 1
+
+            # Simple value (string, number, bool, None)
+            else:
+                normalized.append({"id": auto_id_counter, "data": item})
+                auto_id_counter += 1
+
+        return normalized
+```
+
+3. **Implement LLM client with provider abstraction**
+
+```python
+# src/services/llm_client.py
+
+class LLMClient:
+    def __init__(self, provider: str = "anthropic"):
+        self.provider = provider
+        if provider == "anthropic":
+            self.client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        elif provider == "openai":
+            self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    async def chat(
+        self,
+        messages: list[dict],
+        model: str = "claude-3-5-sonnet",
+        temperature: float = 0,
+        max_tokens: int = 1000
+    ) -> str:
+        """Send chat request to LLM and return response."""
+        if self.provider == "anthropic":
+            response = self.client.messages.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
+            return response.content[0].text
+
+        elif self.provider == "openai":
+            response = self.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
+            return response.choices[0].message.content
+
+    async def structured_output(
+        self,
+        messages: list[dict],
+        schema: dict,
+        model: str = "claude-3-5-sonnet"
+    ) -> dict:
+        """Get structured JSON output from LLM."""
+        # For Anthropic: Use tool use pattern
+        # For OpenAI: Use response_format parameter
+        pass
+```
+
+4. **Add batch processing logic** (Optional for now, can process sequentially first)
+
+```python
+# src/services/batch_processor.py
+
+import asyncio
+
+async def batch_process(
+    items: list[dict],
+    operation: callable,
+    max_concurrent: int = 5
+) -> list[dict]:
+    """
+    Process items in parallel with concurrency limit.
+
+    Args:
+        items: List of normalized items {id, data}
+        operation: Async function to process each item
+        max_concurrent: Max concurrent operations
+
+    Returns:
+        List of results maintaining input order
+    """
+    semaphore = asyncio.Semaphore(max_concurrent)
+
+    async def process_with_semaphore(item):
+        async with semaphore:
+            try:
+                result = await operation(item)
+                return {"id": item["id"], "result": result}
+            except Exception as e:
+                return {"id": item["id"], "result": None, "error": str(e)}
+
+    # Process all items concurrently (up to max_concurrent)
+    tasks = [process_with_semaphore(item) for item in items]
+    results = await asyncio.gather(*tasks)
+
+    return results
+```
+
+5. **Implement output validation** (Optional for Stage 1.1, required for Stage 1.2)
+
+```python
+# src/services/output_validator.py
+
+import jsonschema
+
+def validate_output(result: any, schema: dict) -> bool:
+    """Validate result against JSON Schema."""
+    try:
+        jsonschema.validate(instance=result, schema=schema)
+        return True
+    except jsonschema.exceptions.ValidationError as e:
+        raise ValueError(f"Output validation failed: {e.message}")
+```
+
+---
+
+**Test Cases (Following SPECIFICATION.md examples):**
+
+```python
+# Test 1: classify_by_llm - Basic classification
+result = await classify_by_llm(
+    input=[
+        {"id": 0, "data": "What to know about Trump's $20B bailout for Argentina"},
+        {"id": 1, "data": "Lakers win championship"}
+    ],
+    categories=["entertainment", "economy", "policy", "sports"]
+)
+assert result == [
+    {"id": 0, "result": "economy"},
+    {"id": 1, "result": "sports"}
+]
+
+# Test 2: classify_by_llm - Simple list input (auto-assigned IDs)
+result = await classify_by_llm(
+    input=["Apple releases new iPhone", "Lakers win game"],
+    categories=["tech", "sports", "politics"]
+)
+assert result == [
+    {"id": 0, "result": "tech"},
+    {"id": 1, "result": "sports"}
+]
+
+# Test 3: classify_by_llm - With custom prompt and scores
+result = await classify_by_llm(
+    input=["This startup raised $50M for AI product"],
+    categories=["tech", "business", "finance"],
+    prompt="Focus on the main action or event",
+    args={"include_scores": True}
+)
+assert result[0]["result"]["category"] in ["tech", "business", "finance"]
+assert "score" in result[0]["result"]
+
+# Test 4: tag_by_llm - Multiple tags returned
+result = await tag_by_llm(
+    input=[{"id": 0, "data": "Building a REST API with Python and PostgreSQL"}],
+    tags=["AI", "backend", "frontend", "database", "operations"]
+)
+assert result == [
+    {"id": 0, "result": ["backend", "database"]}
+]
+
+# Test 5: tag_by_llm - Simple list with custom prompt
+result = await tag_by_llm(
+    input=["Python REST API", "React frontend app"],
+    tags=["python", "javascript", "database", "backend", "frontend"],
+    prompt="Tag based on main technologies"
+)
+assert result == [
+    {"id": 0, "result": ["python", "backend"]},
+    {"id": 1, "result": ["javascript", "frontend"]}
+]
+
+# Test 6: tag_by_llm - No matching tags (empty result)
+result = await tag_by_llm(
+    input=["Generic unrelated content"],
+    tags=["AI", "backend", "frontend"]
+)
+assert result == [{"id": 0, "result": []}]
+
+# Test 7: extract_by_llm - Multi-field extraction
+result = await extract_by_llm(
+    input=[
+        "Article text about AI... by Wade on 2025-10-12",
+        "Tech news story... by Jones on 2025-10-13"
+    ],
+    fields=["title", "author", "date"]
+)
+assert result[0]["result"] == {"title": "...", "author": "Wade", "date": "2025-10-12"}
+assert result[1]["result"] == {"title": "...", "author": "Jones", "date": "2025-10-13"}
+
+# Test 8: extract_by_llm - Single field (still returns dict)
+result = await extract_by_llm(
+    input=["Long article... nvidia hit all time high... by Wade..."],
+    fields=["title"]
+)
+assert result == [{"id": 0, "result": {"title": "nvidia hit all time high"}}]
+
+# Test 9: extract_by_llm - With response_format (structured output)
+result = await extract_by_llm(
+    input=["Article with multiple authors: Wade, Smith. Tags: AI, tech"],
+    response_format={
+        "type": "object",
+        "properties": {
+            "title": {"type": "string"},
+            "authors": {
+                "type": "array",
+                "items": {"type": "string"}
+            },
+            "tags": {
+                "type": "array",
+                "items": {"type": "string"}
+            }
+        },
+        "required": ["title", "authors"]
+    }
+)
+assert result[0]["result"]["authors"] == ["Wade", "Smith"]
+assert result[0]["result"]["tags"] == ["AI", "tech"]
+
+# Test 10: Error handling - Failed items
+result = await classify_by_llm(
+    input=["Valid content", "Invalid content", "Another valid"],
+    categories=["tech", "sports"]
+)
+# Should have error marker for failed item
+assert any("error" in item for item in result if item["id"] == 1)
+assert result[0]["result"] is not None
+assert result[2]["result"] is not None
+
+# Test 11: Batch processing - Large list
+result = await tag_by_llm(
+    input=[f"Article {i} about tech" for i in range(100)],
+    tags=["tech", "business", "sports"]
+)
+assert len(result) == 100
+assert all("id" in item for item in result)
 ```
 
 **Deliverables:**
-- 4 template JSON files
-- `src/services/llm_client.py` - LLM integration
-- `src/services/output_validator.py` - Output schema validation
-- `tests/test_stage1_1.py` - Test cases
+- `src/tools/classify_by_llm.py` - Classification tool
+- `src/tools/tag_by_llm.py` - Tagging tool
+- `src/tools/extract_by_llm.py` - Extraction tool
+- `src/services/llm_client.py` - LLM provider abstraction
+- `src/services/input_normalizer.py` - Input format normalization
+- `src/services/batch_processor.py` - Batch processing logic
+- `tests/test_classify_by_llm.py` - Classification tests
+- `tests/test_tag_by_llm.py` - Tagging tests
+- `tests/test_extract_by_llm.py` - Extraction tests
 
 ---
 
@@ -495,7 +974,150 @@ Users can reference other fields using `{$field_name}` syntax in prompts.
 
 ---
 
-## Stage 3: Template Management System
+---
+
+### Stage 4.2: Batch Processing(future)
+
+**Goal:** Process multiple data items in a single call.
+
+**Example:**
+```python
+result = execute_template("classify_simple", {
+    "batch": True,
+    "items": [
+        {"input_data": "Great product!", "categories": "positive,negative,neutral"},
+        {"input_data": "Terrible quality", "categories": "positive,negative,neutral"},
+        {"input_data": "It's okay", "categories": "positive,negative,neutral"}
+    ]
+})
+# Returns: [
+#   {"category": "positive"},
+#   {"category": "negative"},
+#   {"category": "neutral"}
+# ]
+```
+
+**Tasks:**
+- Add batch support to executor
+- Implement parallel processing
+- Add progress tracking
+- Handle partial failures
+
+---
+
+### Stage 4.3: Template Chaining (future)
+
+**Goal:** Chain multiple templates together.
+
+**Example:**
+```json
+{
+  "template_id": "analyze_and_summarize",
+  "chain": [
+    {
+      "template_id": "extract_fields",
+      "inputs": {
+        "input_data": "{$input}",
+        "expected_fields": ["title", "body", "author"]
+      }
+    },
+    {
+      "template_id": "classify_simple",
+      "inputs": {
+        "input_data": "{$previous.body}",
+        "categories": "tech, business, entertainment"
+      }
+    },
+    {
+      "template_id": "summarize_simple",
+      "inputs": {
+        "input_data": "{$previous.body}"
+      }
+    }
+  ]
+}
+```
+
+**Tasks:**
+- Implement chain executor
+- Support referencing previous results
+- Add error handling for chains
+- Optimize for performance
+
+---
+
+### Stage 4.4: Caching and Optimization (future)
+
+**Goal:** Cache results and optimize performance.
+
+**Features:**
+1. **Result Caching**
+   - Cache identical inputs → outputs
+   - TTL-based cache expiration
+   - Redis or in-memory cache
+
+2. **Prompt Optimization**
+   - Track prompt performance
+   - A/B test different prompts
+   - Auto-optimize based on validation failures
+
+3. **Model Selection**
+   - Use cheaper models for simple tasks
+   - Fallback to better models on failure
+   - Cost tracking per template
+
+**Implementation:**
+```python
+class TemplateCache:
+    def get_cached_result(self, template_id: str, inputs: Dict) -> Optional[Dict]
+    def cache_result(self, template_id: str, inputs: Dict, result: Dict, ttl: int)
+    def invalidate_cache(self, template_id: str)
+```
+
+---
+
+## Stage 5: Production Readiness (future)
+
+### Tasks:
+
+1. **Error Handling**
+   - Comprehensive error types
+   - Retry logic with exponential backoff
+   - Graceful degradation
+
+2. **Logging and Monitoring**
+   - Request/response logging
+   - Performance metrics
+   - Error tracking
+   - Usage analytics
+
+3. **Rate Limiting**
+   - Per-user rate limits
+   - Per-template rate limits
+   - Cost limits
+
+4. **Security**
+   - Input validation and sanitization
+   - Output validation
+   - API authentication
+   - Secret management for API keys
+
+5. **Documentation**
+   - User guide
+   - API reference
+   - Template creation guide
+   - Best practices
+
+6. **Testing**
+   - Unit tests (90%+ coverage)
+   - Integration tests
+   - Load tests
+   - End-to-end tests
+
+---
+
+
+## Stage 7: Template Management System (very far furture)
 
 **Goal:** Build a complete template management system with CRUD operations.
 
@@ -553,198 +1175,6 @@ Users can reference other fields using `{$field_name}` syntax in prompts.
 - `docs/api_spec.md` - API documentation
 - `tests/test_stage3.py`
 
----
-
-## Stage 4: Advanced Features
-
-### Stage 4.1: AI-Powered Template Generation
-
-**Goal:** Generate templates automatically from user descriptions.
-
-**Flow:**
-```
-User: "I want to extract product information from descriptions"
-  ↓
-AI analyzes requirements
-  ↓
-Generates template with:
-  - Appropriate prompt
-  - Input schema
-  - Output schema
-  - Field definitions
-  ↓
-User reviews and confirms
-  ↓
-Template saved and registered
-```
-
-**Implementation:**
-```python
-async def generate_template_from_description(
-    description: str,
-    sample_input: str = None,
-    expected_output_format: str = None
-) -> FieldTemplate:
-    """
-    Use LLM to generate template configuration
-    """
-    prompt = f"""
-    Generate a field template configuration for:
-    {description}
-
-    Sample input: {sample_input}
-    Expected output: {expected_output_format}
-
-    Return JSON with: prompt_template, input_schema, output_schema
-    """
-    # ... implementation
-```
-
-**Tasks:**
-- Implement template generation prompt
-- Add sample testing during generation
-- Support iterative refinement
-- Validate generated templates
-
----
-
-### Stage 4.2: Batch Processing
-
-**Goal:** Process multiple data items in a single call.
-
-**Example:**
-```python
-result = execute_template("classify_simple", {
-    "batch": True,
-    "items": [
-        {"input_data": "Great product!", "categories": "positive,negative,neutral"},
-        {"input_data": "Terrible quality", "categories": "positive,negative,neutral"},
-        {"input_data": "It's okay", "categories": "positive,negative,neutral"}
-    ]
-})
-# Returns: [
-#   {"category": "positive"},
-#   {"category": "negative"},
-#   {"category": "neutral"}
-# ]
-```
-
-**Tasks:**
-- Add batch support to executor
-- Implement parallel processing
-- Add progress tracking
-- Handle partial failures
-
----
-
-### Stage 4.3: Template Chaining
-
-**Goal:** Chain multiple templates together.
-
-**Example:**
-```json
-{
-  "template_id": "analyze_and_summarize",
-  "chain": [
-    {
-      "template_id": "extract_fields",
-      "inputs": {
-        "input_data": "{$input}",
-        "expected_fields": ["title", "body", "author"]
-      }
-    },
-    {
-      "template_id": "classify_simple",
-      "inputs": {
-        "input_data": "{$previous.body}",
-        "categories": "tech, business, entertainment"
-      }
-    },
-    {
-      "template_id": "summarize_simple",
-      "inputs": {
-        "input_data": "{$previous.body}"
-      }
-    }
-  ]
-}
-```
-
-**Tasks:**
-- Implement chain executor
-- Support referencing previous results
-- Add error handling for chains
-- Optimize for performance
-
----
-
-### Stage 4.4: Caching and Optimization
-
-**Goal:** Cache results and optimize performance.
-
-**Features:**
-1. **Result Caching**
-   - Cache identical inputs → outputs
-   - TTL-based cache expiration
-   - Redis or in-memory cache
-
-2. **Prompt Optimization**
-   - Track prompt performance
-   - A/B test different prompts
-   - Auto-optimize based on validation failures
-
-3. **Model Selection**
-   - Use cheaper models for simple tasks
-   - Fallback to better models on failure
-   - Cost tracking per template
-
-**Implementation:**
-```python
-class TemplateCache:
-    def get_cached_result(self, template_id: str, inputs: Dict) -> Optional[Dict]
-    def cache_result(self, template_id: str, inputs: Dict, result: Dict, ttl: int)
-    def invalidate_cache(self, template_id: str)
-```
-
----
-
-## Stage 5: Production Readiness
-
-### Tasks:
-
-1. **Error Handling**
-   - Comprehensive error types
-   - Retry logic with exponential backoff
-   - Graceful degradation
-
-2. **Logging and Monitoring**
-   - Request/response logging
-   - Performance metrics
-   - Error tracking
-   - Usage analytics
-
-3. **Rate Limiting**
-   - Per-user rate limits
-   - Per-template rate limits
-   - Cost limits
-
-4. **Security**
-   - Input validation and sanitization
-   - Output validation
-   - API authentication
-   - Secret management for API keys
-
-5. **Documentation**
-   - User guide
-   - API reference
-   - Template creation guide
-   - Best practices
-
-6. **Testing**
-   - Unit tests (90%+ coverage)
-   - Integration tests
-   - Load tests
-   - End-to-end tests
 
 ---
 
@@ -881,3 +1311,5 @@ class TemplateCache:
 **Document Version:** 1.0
 **Last Updated:** 2025-10-17
 **Status:** Ready for Review
+
+### for test case if @pytest is not easy to config and make it run sucessful , you could change to other method

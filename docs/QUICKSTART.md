@@ -41,7 +41,7 @@ OPENAI_MODEL=openai/gpt-4o-mini
 
 ```bash
 # Start the server with streamable-http transport
-python main.py --transport streamable-http --port 8321
+python main.py --transport streamable-http --port 8322
 ```
 
 You should see output like:
@@ -51,10 +51,10 @@ You should see output like:
 📋 Server Information:
    📦 Version: 1.0.0
    🌐 Transport: streamable-http
-   🔗 URL: http://0.0.0.0:8321
+   🔗 URL: http://0.0.0.0:8322
    🐍 Python: 3.11.0
 
-🚀 Starting server on http://0.0.0.0:8321
+🚀 Starting server on http://0.0.0.0:8322
 ```
 
 ## Testing the Tools
@@ -85,7 +85,7 @@ from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
 async def test_summarize():
-    url = "http://127.0.0.1:8321/mcp"
+    url = "http://127.0.0.1:8322/mcp"
     
     async with streamablehttp_client(url=url) as (read, write, _):
         async with ClientSession(read, write) as session:
@@ -204,7 +204,7 @@ echo "OPENAI_API_KEY=sk-your-key-here" > .env
 
 ### Port Already in Use
 
-If port 8321 is already in use, specify a different port:
+If port 8322 is already in use, specify a different port:
 ```bash
 python main.py --transport streamable-http --port 8322
 ```

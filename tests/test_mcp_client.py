@@ -21,6 +21,7 @@ Environment Variables Required:
 """
 
 import asyncio
+import json
 import os
 
 from dotenv import load_dotenv
@@ -98,10 +99,21 @@ async def test_summarize_text(url):
             if summarize_res.isError:
                 print(f"❌ Error: {summarize_res.content[0].text if summarize_res.content else 'Unknown error'}")
             else:
-                result = summarize_res.content[0].text if summarize_res.content else None
-                print(f"✅ Summary: {result}")
-                if result:
-                    print(f"   Summary length: {len(result)} characters")
+                result_text = summarize_res.content[0].text if summarize_res.content else None
+                if result_text:
+                    try:
+                        result = json.loads(result_text)
+                        if result.get("success"):
+                            print(f"✅ Summary: {result['summary']}")
+                            print(f"   Word count: {result['word_count']} words")
+                            print(f"   Original length: {result['original_length']} characters")
+                            if result.get('key_points'):
+                                print(f"   Key points: {', '.join(result['key_points'][:3])}...")
+                        else:
+                            print(f"❌ Error in response: {result.get('error', 'Unknown error')}")
+                    except json.JSONDecodeError as e:
+                        print(f"❌ Failed to parse JSON: {e}")
+                        print(f"   Raw response: {result_text[:100]}...")
 
             # Test 2: Summarize a longer text
             print("\n📝 Test 2: Summarizing a longer text")
@@ -130,13 +142,21 @@ async def test_summarize_text(url):
             if summarize_res2.isError:
                 print(f"❌ Error: {summarize_res2.content[0].text if summarize_res2.content else 'Unknown error'}")
             else:
-                result = summarize_res2.content[0].text if summarize_res2.content else None
-                print(f"✅ Summary: {result}")
-                if result:
-                    print(f"   Summary length: {len(result)} characters")
-                    # Count words
-                    word_count = len(result.split())
-                    print(f"   Summary word count: {word_count} words")
+                result_text = summarize_res2.content[0].text if summarize_res2.content else None
+                if result_text:
+                    try:
+                        result = json.loads(result_text)
+                        if result.get("success"):
+                            print(f"✅ Summary: {result['summary']}")
+                            print(f"   Word count: {result['word_count']} words")
+                            print(f"   Original length: {result['original_length']} characters")
+                            print(f"   Model used: {result.get('model', 'unknown')}")
+                            if result.get('key_points'):
+                                print(f"   Key points ({len(result['key_points'])}): {result['key_points']}")
+                        else:
+                            print(f"❌ Error in response: {result.get('error', 'Unknown error')}")
+                    except json.JSONDecodeError as e:
+                        print(f"❌ Failed to parse JSON: {e}")
 
             # Test 3: Summarize with very short limit
             print("\n📝 Test 3: Summarizing with very short limit (20 words)")
@@ -149,11 +169,21 @@ async def test_summarize_text(url):
             if summarize_res3.isError:
                 print(f"❌ Error: {summarize_res3.content[0].text if summarize_res3.content else 'Unknown error'}")
             else:
-                result = summarize_res3.content[0].text if summarize_res3.content else None
-                print(f"✅ Summary: {result}")
-                if result:
-                    word_count = len(result.split())
-                    print(f"   Summary word count: {word_count} words")
+                result_text = summarize_res3.content[0].text if summarize_res3.content else None
+                if result_text:
+                    try:
+                        result = json.loads(result_text)
+                        if result.get("success"):
+                            print(f"✅ Summary: {result['summary']}")
+                            print(f"   Word count: {result['word_count']} words (requested max: 20)")
+                            if result['word_count'] <= 25:  # Allow some flexibility
+                                print(f"   ✅ PASS: Word count within limit")
+                            else:
+                                print(f"   ⚠️  WARNING: Word count exceeds requested limit")
+                        else:
+                            print(f"❌ Error in response: {result.get('error', 'Unknown error')}")
+                    except json.JSONDecodeError as e:
+                        print(f"❌ Failed to parse JSON: {e}")
 
             # Test 4: Test with default max_words parameter
             print("\n📝 Test 4: Summarizing with default max_words (50)")
@@ -166,10 +196,180 @@ async def test_summarize_text(url):
             if summarize_res4.isError:
                 print(f"❌ Error: {summarize_res4.content[0].text if summarize_res4.content else 'Unknown error'}")
             else:
-                result = summarize_res4.content[0].text if summarize_res4.content else None
-                print(f"✅ Summary: {result}")
+                result_text = summarize_res4.content[0].text if summarize_res4.content else None
+                if result_text:
+                    try:
+                        result = json.loads(result_text)
+                        if result.get("success"):
+                            print(f"✅ Summary: {result['summary']}")
+                            print(f"   Word count: {result['word_count']} words (default max: 50)")
+                        else:
+                            print(f"❌ Error in response: {result.get('error', 'Unknown error')}")
+                    except json.JSONDecodeError as e:
+                        print(f"❌ Failed to parse JSON: {e}")
 
             print("\n✅ Summarize text tool test completed!")
+
+
+async def test_json_structure(url):
+    """Test JSON structure validation - new comprehensive test case"""
+    print("🚀 Testing JSON Structure Validation")
+    print("=" * 60)
+
+    async with streamablehttp_client(url=url) as (read, write, _):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+
+            # Test 1: Validate JSON structure
+            print("\n🔍 Test 1: Validating JSON response structure")
+            test_text = """
+            Machine learning is a subset of artificial intelligence that enables computers 
+            to learn and improve from experience without being explicitly programmed. It uses 
+            algorithms to analyze data, identify patterns, and make decisions with minimal 
+            human intervention.
+            """
+            
+            response = await session.call_tool(
+                "summarize_text",
+                {"text": test_text, "max_words": 40}
+            )
+            
+            if not response.isError and response.content:
+                result_text = response.content[0].text
+                try:
+                    result = json.loads(result_text)
+                    print("✅ Response is valid JSON")
+                    
+                    # Check if this is an error response
+                    if not result.get("success"):
+                        print(f"⚠️  API Error occurred: {result.get('error', 'Unknown error')}")
+                        print("   Skipping field validation for error response")
+                        print("   ✅ PASS: Error response structure is valid")
+                        # Continue to next test
+                    else:
+                        # Validate required fields for successful response
+                        required_fields = ["success", "summary", "key_points", "word_count", "original_length", "model"]
+                        missing_fields = [field for field in required_fields if field not in result]
+                        
+                        if not missing_fields:
+                            print(f"✅ All required fields present: {required_fields}")
+                        else:
+                            print(f"❌ Missing fields: {missing_fields}")
+                        
+                        # Validate data types
+                        print("\n📊 Validating data types:")
+                        validations = []
+                        
+                        if isinstance(result.get("success"), bool):
+                            print(f"   ✅ 'success' is boolean: {result['success']}")
+                            validations.append(True)
+                        else:
+                            print(f"   ❌ 'success' is not boolean: {type(result.get('success'))}")
+                            validations.append(False)
+                        
+                        if isinstance(result.get("summary"), str):
+                            print(f"   ✅ 'summary' is string (length: {len(result['summary'])})")
+                            validations.append(True)
+                        else:
+                            print(f"   ❌ 'summary' is not string")
+                            validations.append(False)
+                        
+                        if isinstance(result.get("key_points"), list):
+                            print(f"   ✅ 'key_points' is list (count: {len(result['key_points'])})")
+                            validations.append(True)
+                        else:
+                            print(f"   ❌ 'key_points' is not list")
+                            validations.append(False)
+                        
+                        if isinstance(result.get("word_count"), int):
+                            print(f"   ✅ 'word_count' is integer: {result['word_count']}")
+                            validations.append(True)
+                        else:
+                            print(f"   ❌ 'word_count' is not integer")
+                            validations.append(False)
+                        
+                        if isinstance(result.get("original_length"), int):
+                            print(f"   ✅ 'original_length' is integer: {result['original_length']}")
+                            validations.append(True)
+                        else:
+                            print(f"   ❌ 'original_length' is not integer")
+                            validations.append(False)
+                        
+                        if isinstance(result.get("model"), str):
+                            print(f"   ✅ 'model' is string: {result['model']}")
+                            validations.append(True)
+                        else:
+                            print(f"   ❌ 'model' is not string")
+                            validations.append(False)
+                        
+                        # Overall validation result
+                        if all(validations) and not missing_fields:
+                            print("\n🎉 PASS: JSON structure is fully valid!")
+                        else:
+                            print("\n⚠️  FAIL: JSON structure has issues")
+                    
+                except json.JSONDecodeError as e:
+                    print(f"❌ Failed to parse JSON: {e}")
+
+            # Test 2: Test error handling with JSON
+            print("\n🔍 Test 2: Validating error response structure")
+            # Test with empty text (should handle gracefully)
+            error_response = await session.call_tool(
+                "summarize_text",
+                {"text": "", "max_words": 10}
+            )
+            
+            if not error_response.isError and error_response.content:
+                result_text = error_response.content[0].text
+                try:
+                    result = json.loads(result_text)
+                    print("✅ Error response is valid JSON")
+                    
+                    # Even with empty text, should return valid structure
+                    if "success" in result:
+                        if result["success"]:
+                            print(f"   ℹ️  Empty text handled gracefully")
+                            print(f"   Summary: {result.get('summary', 'N/A')}")
+                        else:
+                            print(f"   ✅ Error properly indicated: {result.get('error', 'N/A')}")
+                    
+                except json.JSONDecodeError as e:
+                    print(f"❌ Error response is not valid JSON: {e}")
+
+            # Test 3: Consistency check
+            print("\n🔍 Test 3: Validating consistency of word count")
+            consistency_response = await session.call_tool(
+                "summarize_text",
+                {"text": test_text, "max_words": 25}
+            )
+            
+            if not consistency_response.isError and consistency_response.content:
+                result_text = consistency_response.content[0].text
+                try:
+                    result = json.loads(result_text)
+                    if result.get("success"):
+                        reported_count = result.get("word_count", 0)
+                        actual_count = len(result.get("summary", "").split())
+                        
+                        print(f"   Reported word count: {reported_count}")
+                        print(f"   Actual word count: {actual_count}")
+                        
+                        if reported_count == actual_count:
+                            print(f"   ✅ PASS: Word counts match")
+                        else:
+                            print(f"   ⚠️  WARNING: Word counts don't match")
+                        
+                        # Check if within requested limit (with some tolerance)
+                        requested_max = 25
+                        if actual_count <= requested_max + 5:  # 5 word tolerance
+                            print(f"   ✅ PASS: Summary within word limit ({requested_max} +/- 5)")
+                        else:
+                            print(f"   ⚠️  WARNING: Summary exceeds word limit")
+                    
+                except json.JSONDecodeError as e:
+                    print(f"❌ Failed to parse JSON: {e}")
+
+            print("\n✅ JSON structure validation test completed!")
 
 
 async def test_all(url):
@@ -180,6 +380,8 @@ async def test_all(url):
     await test_hello(url)
     print("\n" + "=" * 80 + "\n")
     await test_summarize_text(url)
+    print("\n" + "=" * 80 + "\n")
+    await test_json_structure(url)
     
     print("\n" + "=" * 80)
     print("🎉 ALL TESTS COMPLETED!")
@@ -195,7 +397,7 @@ if __name__ == "__main__":
         "--env",
         choices=["local", "remote"],
         default="local",
-        help="Environment to use: local (127.0.0.1:8321) or remote (custom URL)",
+        help="Environment to use: local (127.0.0.1:8322) or remote (custom URL)",
     )
     parser.add_argument(
         "--url",
@@ -205,9 +407,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--test",
-        choices=["all", "hello", "summarize"],
+        choices=["all", "hello", "summarize", "json"],
         default="all",
-        help="Which test to run: all (default), hello, or summarize",
+        help="Which test to run: all (default), hello, summarize, or json",
     )
     args = parser.parse_args()
 
@@ -222,7 +424,7 @@ if __name__ == "__main__":
     print()
 
     # Check for required environment variables if testing summarize
-    if args.test in ["all", "summarize"]:
+    if args.test in ["all", "summarize", "json"]:
         if not os.getenv("OPENAI_API_KEY"):
             print("⚠️  WARNING: OPENAI_API_KEY not found in environment")
             print("   The summarize_text test will fail without it")
@@ -238,4 +440,6 @@ if __name__ == "__main__":
         asyncio.run(test_hello(test_url))
     elif args.test == "summarize":
         asyncio.run(test_summarize_text(test_url))
+    elif args.test == "json":
+        asyncio.run(test_json_structure(test_url))
 

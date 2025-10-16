@@ -2,8 +2,25 @@ version: '3.8'
 
 services:
   mcp-template:
+    container_name: field-template-mcp
     build: .
     ports:
-      - "8321:8321"
+      - "8322:8322"
+    environment:
+      # LLM API Configuration
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
     volumes:
+      # Mount .env file for API keys (read-only)
       - ./.env:/app/.env:ro
+      # Mount configs directory for tool configurations (read-only)
+      - ./configs:/app/configs:ro
+    restart: unless-stopped
+    networks:
+      - mcp-network
+
+networks:
+  mcp-network:
+    driver: bridge

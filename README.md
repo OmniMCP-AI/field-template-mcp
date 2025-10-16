@@ -50,17 +50,24 @@ docker-compose up --build
 # stdio mode (default)
 python main.py
 
-# HTTP mode
-python main.py --transport streamable-http --port 8321
+# HTTP mode (default port: 8322)
+python main.py --transport streamable-http --port 8322
 ```
 
 ### Running with Docker
 
 ```bash
-docker-compose up
+# Build and run
+docker-compose up --build
+
+# Run in detached mode
+docker-compose up -d
+
+# Stop the container
+docker-compose down
 ```
 
-The server will be available at `http://localhost:8321`
+The server will be available at `http://localhost:8322`
 
 ## Configuration
 

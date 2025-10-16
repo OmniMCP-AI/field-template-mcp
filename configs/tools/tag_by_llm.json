@@ -1,0 +1,103 @@
+{
+  "tool_name": "tag_by_llm",
+  "description": "Apply multiple relevant tags from a predefined set to each input (non-mutually exclusive)",
+  "category": "tagging",
+  "version": "1.0.0",
+  "model_config": {
+    "provider": "anthropic",
+    "model": "claude-3-5-sonnet-20241022",
+    "temperature": 0.0,
+    "max_tokens": 200
+  },
+  "prompt_templates": {
+    "system": "You are a tagging expert. Your task is to apply relevant tags from a predefined list to the given text.\n\nRules:\n- You can apply 0 to N tags per input\n- Only use tags from the provided list\n- Apply all tags that are relevant to the content\n- Return tags as a JSON array of strings\n- If no tags are relevant, return an empty array []",
+    "user": "Available tags: {tags}\n\nText to tag:\n{text}\n\nRelevant tags (as JSON array):"
+  },
+  "parameters": {
+    "input": {
+      "type": "array",
+      "description": "List of items to tag",
+      "required": true
+    },
+    "tags": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "List of possible tags (non-mutually exclusive)",
+      "minItems": 1,
+      "required": true
+    },
+    "prompt": {
+      "type": "string",
+      "description": "Optional custom instructions for tagging context",
+      "required": false
+    },
+    "args": {
+      "type": "object",
+      "description": "Optional configuration",
+      "properties": {
+        "model": {"type": "string", "description": "Override default model"},
+        "temperature": {"type": "number", "description": "Override temperature"},
+        "max_tags": {"type": "integer", "description": "Maximum tags per item"},
+        "min_relevance": {"type": "number", "description": "Minimum relevance threshold (0-1)"},
+        "include_scores": {"type": "boolean", "default": false}
+      },
+      "required": false
+    }
+  },
+  "output_format": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "properties": {
+        "id": {"type": ["integer", "string"]},
+        "result": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {"type": "string"},
+              {
+                "type": "object",
+                "properties": {
+                  "tag": {"type": "string"},
+                  "score": {"type": "number"}
+                }
+              }
+            ]
+          }
+        },
+        "error": {"type": "string"}
+      },
+      "required": ["id", "result"]
+    }
+  },
+  "examples": [
+    {
+      "description": "Basic tagging",
+      "input": {
+        "input": ["Python REST API", "React frontend app"],
+        "tags": ["python", "javascript", "database", "backend", "frontend"]
+      },
+      "output": [
+        {"id": 0, "result": ["python", "backend"]},
+        {"id": 1, "result": ["javascript", "frontend"]}
+      ]
+    },
+    {
+      "description": "With scores and max tags",
+      "input": {
+        "input": [{"id": "proj_1", "data": "Full-stack web app"}],
+        "tags": ["python", "javascript", "backend", "frontend", "database"],
+        "args": {"max_tags": 2, "include_scores": true}
+      },
+      "output": [
+        {
+          "id": "proj_1",
+          "result": [
+            {"tag": "backend", "score": 0.9},
+            {"tag": "frontend", "score": 0.85}
+          ]
+        }
+      ]
+    }
+  ]
+}

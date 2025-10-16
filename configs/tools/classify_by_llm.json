@@ -1,0 +1,83 @@
+{
+  "tool_name": "classify_by_llm",
+  "description": "Classify each input into exactly ONE best-matching category from predefined options using LLM",
+  "category": "classification",
+  "version": "1.0.0",
+  "model_config": {
+    "provider": "anthropic",
+    "model": "claude-3-5-sonnet-20241022",
+    "temperature": 0.0,
+    "max_tokens": 100
+  },
+  "prompt_templates": {
+    "system": "You are a classification expert. Your task is to classify text into exactly ONE category from the provided list.\n\nRules:\n- You MUST choose exactly one category\n- Choose the category that best matches the primary topic or theme\n- If uncertain, choose the most likely category\n- Return ONLY the category name, nothing else",
+    "user": "Categories: {categories}\n\nText to classify:\n{text}\n\nCategory:"
+  },
+  "parameters": {
+    "input": {
+      "type": "array",
+      "description": "List of items to classify",
+      "required": true
+    },
+    "categories": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "List of possible categories (mutually exclusive)",
+      "minItems": 2,
+      "required": true
+    },
+    "prompt": {
+      "type": "string",
+      "description": "Optional custom instructions for classification context",
+      "required": false
+    },
+    "args": {
+      "type": "object",
+      "description": "Optional configuration",
+      "properties": {
+        "model": {"type": "string", "description": "Override default model"},
+        "temperature": {"type": "number", "description": "Override temperature"},
+        "include_scores": {"type": "boolean", "default": false},
+        "allow_none": {"type": "boolean", "default": false},
+        "fallback_category": {"type": "string", "default": null}
+      },
+      "required": false
+    }
+  },
+  "output_format": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "properties": {
+        "id": {"type": ["integer", "string"]},
+        "result": {"type": ["string", "object", "null"]},
+        "error": {"type": "string"}
+      },
+      "required": ["id"]
+    }
+  },
+  "examples": [
+    {
+      "description": "Basic classification",
+      "input": {
+        "input": ["Apple releases new iPhone", "Lakers win game"],
+        "categories": ["tech", "sports", "politics"]
+      },
+      "output": [
+        {"id": 0, "result": "tech"},
+        {"id": 1, "result": "sports"}
+      ]
+    },
+    {
+      "description": "With confidence scores",
+      "input": {
+        "input": [{"id": "article_1", "data": "Tech startup raises funding"}],
+        "categories": ["tech", "business", "finance"],
+        "args": {"include_scores": true}
+      },
+      "output": [
+        {"id": "article_1", "result": {"category": "business", "score": 0.85}}
+      ]
+    }
+  ]
+}
