@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  mcp-template:
+    build: .
+    ports:
+      - "8321:8321"
+    volumes:
+      - ./.env:/app/.env:ro
