@@ -1,9 +1,15 @@
 import argparse
 import logging
+import os
 import sys
 from importlib import metadata
 
+from dotenv import load_dotenv
 from fastmcp import FastMCP
+from openai import OpenAI
+
+# Load environment variables from .env file
+load_dotenv()
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -12,6 +18,23 @@ logger = logging.getLogger(__name__)
 
 # Initialize FastMCP server
 mcp = FastMCP("MCP Template Server")
+
+# Initialize OpenAI client
+openai_client = None
+try:
+    api_key = os.getenv("OPENAI_API_KEY")
+    base_url = os.getenv("OPENAI_BASE_URL")  # Optional, for OpenRouter or custom endpoints
+    
+    if api_key:
+        if base_url:
+            openai_client = OpenAI(api_key=api_key, base_url=base_url)
+        else:
+            openai_client = OpenAI(api_key=api_key)
+        logger.info("OpenAI client initialized successfully")
+    else:
+        logger.warning("OPENAI_API_KEY not found in environment. summarize_text tool will not work.")
+except Exception as e:
+    logger.error(f"Failed to initialize OpenAI client: {e}")
 
 
 # Example tool - replace with your own
@@ -27,6 +50,50 @@ def hello(name: str) -> str:
         A greeting message
     """
     return f"Hello, {name}!"
+
+
+@mcp.tool()
+def summarize_text(text: str, max_words: int = 50) -> str:
+    """
+    Summarize a given text to a very short content using LLM.
+    
+    Args:
+        text: The text to summarize
+        max_words: Maximum number of words for the summary (default: 50)
+    
+    Returns:
+        A short summary of the text
+    """
+    if not openai_client:
+        return "Error: OpenAI client not initialized. Please set OPENAI_API_KEY in .env file."
+    
+    try:
+        # Get model from environment or use default
+        model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+        
+        # Create the prompt for summarization
+        prompt = f"Summarize the following text in {max_words} words or less. Be concise and capture the key points:\n\n{text}"
+        
+        # Call OpenAI API
+        response = openai_client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant that summarizes text concisely."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=max_words * 2  # Rough estimate: 1 word ≈ 1-2 tokens
+        )
+        
+        summary = response.choices[0].message.content.strip()
+        logger.info(f"Successfully summarized text of length {len(text)} to {len(summary)} characters")
+        
+        return summary
+    
+    except Exception as e:
+        error_msg = f"Error summarizing text: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        return error_msg
 
 
 def main():
@@ -45,8 +112,8 @@ def main():
     parser.add_argument(
         "--port",
         type=int,
-        default=8321,
-        help="Port for streamable-http transport (default: 8321)",
+        default=8322,
+        help="Port for streamable-http transport (default: 8322)",
     )
     args = parser.parse_args()
 

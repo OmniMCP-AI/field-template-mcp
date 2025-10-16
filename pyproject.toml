@@ -12,6 +12,8 @@ requires-python = ">=3.11"
 dependencies = [
     "fastmcp>=2.3.3",
     "python-dotenv>=1.1.1",
+    "openai>=2.4.0",
+    "mcp>=1.1.2",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -34,3 +36,9 @@ mcp-template = "main:main"
 [tool.setuptools]
 packages = ["src"]
 py-modules = ["main"]
+
+[tool.rye]
+dev-dependencies = [
+    "isort>=7.0.0",
+    "ruff>=0.14.0",
+]

@@ -9,6 +9,8 @@ A template for building Model Context Protocol (MCP) servers using FastMCP.
 - 📦 Python package configuration with pyproject.toml
 - 🔧 Environment variable configuration
 - 📁 Well-organized folder structure
+- 🤖 Built-in AI text summarization tool using OpenAI/OpenRouter
+- 🧪 Comprehensive test suite with SSE client support
 
 ## Project Structure
 
@@ -62,12 +64,97 @@ The server will be available at `http://localhost:8321`
 
 ## Configuration
 
-Edit the `.env` file to configure your environment variables:
+Create a `.env` file from the example:
 
 ```bash
-# Add your configuration here
-API_KEY=your_api_key_here
+cp env.example .env
 ```
+
+Edit the `.env` file to configure your API keys:
+
+```bash
+# OpenAI Configuration (Required for summarize_text tool)
+OPENAI_API_KEY=sk-your-openai-api-key-here
+
+# Optional: Custom base URL for OpenRouter or other OpenAI-compatible endpoints
+# For OpenRouter: https://openrouter.ai/api/v1
+OPENAI_BASE_URL=
+
+# Optional: Model to use for summarization (default: gpt-4o-mini)
+OPENAI_MODEL=gpt-4o-mini
+```
+
+### OpenRouter Configuration
+
+If you want to use [OpenRouter](https://openrouter.ai/) for accessing multiple LLM providers:
+
+```bash
+OPENAI_API_KEY=sk-or-v1-your-openrouter-api-key-here
+OPENAI_BASE_URL=https://openrouter.ai/api/v1
+OPENAI_MODEL=openai/gpt-4o-mini
+# Or use other models like: anthropic/claude-3-opus, google/gemini-pro, etc.
+```
+
+## Available Tools
+
+### 1. hello
+A simple greeting tool to test the MCP connection.
+
+**Parameters:**
+- `name` (str): The name to greet
+
+**Example:**
+```python
+result = await session.call_tool("hello", {"name": "World"})
+# Returns: "Hello, World!"
+```
+
+### 2. summarize_text
+Summarize text using OpenAI/OpenRouter LLM to generate concise summaries.
+
+**Parameters:**
+- `text` (str): The text to summarize
+- `max_words` (int, optional): Maximum number of words for the summary (default: 50)
+
+**Example:**
+```python
+result = await session.call_tool(
+    "summarize_text",
+    {
+        "text": "Long text here...",
+        "max_words": 30
+    }
+)
+# Returns: A concise summary
+```
+
+## Testing
+
+The project includes comprehensive tests for all MCP tools.
+
+### Running Tests
+
+```bash
+# Make sure the server is running first
+python main.py --transport streamable-http --port 8321
+
+# In another terminal, run the tests
+# Run all tests
+python test/test_mcp_client.py --env=local --test=all
+
+# Run specific test
+python test/test_mcp_client.py --env=local --test=hello
+python test/test_mcp_client.py --env=local --test=summarize
+
+# Test against a remote server
+python test/test_mcp_client.py --env=remote --url=https://your-server.com --test=all
+```
+
+### Test Requirements
+
+For the `summarize_text` test to work, you need to:
+1. Set `OPENAI_API_KEY` in your `.env` file
+2. Optionally configure `OPENAI_BASE_URL` for OpenRouter
 
 ## Development
 
@@ -80,7 +167,23 @@ API_KEY=your_api_key_here
 
 ### Adding Tools
 
-Add your MCP tools in the `src/` directory and import them in `main.py`.
+Add your MCP tools in `main.py` or create separate modules in the `src/` directory:
+
+```python
+@mcp.tool()
+def your_tool(param: str) -> str:
+    """
+    Description of your tool.
+    
+    Args:
+        param: Parameter description
+    
+    Returns:
+        Result description
+    """
+    # Your implementation
+    return result
+```
 
 ## Docker Support
 
