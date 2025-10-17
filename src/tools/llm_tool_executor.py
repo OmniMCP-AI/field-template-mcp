@@ -80,9 +80,8 @@ class LLMToolExecutor:
         if single_input and len(results) > 0:
             result = results[0].get("result")
 
-            # If output_format exists, wrap in object for MCP schema compliance
-            if self.template.output_format:
-                # Use 'result' as the key for consistency
+            # If output_format is a string type, MCP requires dict wrapping
+            if self.template.output_format and self.template.output_format.get("type") == "string":
                 return {"result": result}
 
             return result
