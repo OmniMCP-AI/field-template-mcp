@@ -86,7 +86,7 @@ for tool_name in tool_registry.template_loader.list_templates():
 
     # Build the function dynamically
     func_code = f'''
-async def {tool_name}_tool({params_str}):
+async def {tool_name}({params_str}):
     """{description}"""
     return await tool_registry.call_tool("{tool_name}", {{k: v for k, v in locals().items()}})
 '''
@@ -105,7 +105,7 @@ async def {tool_name}_tool({params_str}):
     exec(func_code, exec_globals)
 
     # Get the created function and register it
-    tool_func = exec_globals[f'{tool_name}_tool']
+    tool_func = exec_globals[f'{tool_name}']
     mcp.tool()(tool_func)
 
 
