@@ -5,7 +5,7 @@ This module provides a generic execution engine using the Strategy Pattern.
 No if-elif chains - operation type determines which strategy to use.
 """
 
-from typing import List, Dict, Any
+from typing import Any
 
 from ..services import InputNormalizer, get_llm_client
 from .models import LLMToolTemplate, OperationType
@@ -43,26 +43,41 @@ class LLMToolExecutor:
         if not self.strategy:
             raise ValueError(f"Unknown operation type: {template.operation_type}")
 
-    async def execute(self, **kwargs) -> List[Dict[str, Any]]:
+    async def execute(self, **kwargs) -> Any:
         """
-        Execute using appropriate strategy - NO if-elif chains!
+        Execute using appropriate strategy.
 
         Args:
             **kwargs: Tool-specific arguments
 
         Returns:
-            List of {id, result, error?} dicts
+            For single string input: returns single result (string or dict)
+            For list input: returns List of {id, result, error?} dicts
         """
-        # Normalize input
-        normalized = InputNormalizer.normalize(kwargs.get("input"))
+        input_data = kwargs.get("input")
+
+        # Check if input is a simple string (not a list)
+        single_input = isinstance(input_data, str)
+
+        # Normalize input to list format for processing
+        if single_input:
+            normalized = [{"id": 0, "data": input_data}]
+        else:
+            normalized = InputNormalizer.normalize(input_data)
 
         # Validate parameters
         self.strategy.validate_params(self.template, kwargs)
 
-        # Execute using strategy - completely generic!
-        return await self.strategy.execute(
+        # Execute using strategy
+        results = await self.strategy.execute(
             llm_client=get_llm_client(),
             template=self.template,
             normalized_input=normalized,
             **kwargs
         )
+
+        # For single string input, return just the result value
+        if single_input and len(results) > 0:
+            return results[0].get("result")
+
+        return results

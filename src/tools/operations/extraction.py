@@ -8,6 +8,7 @@ from typing import Any, Dict, List
 
 from .base import OperationStrategy
 from ..models import LLMToolTemplate
+from ..extract_text_util import extract_json_str
 
 
 class ExtractionOperation(OperationStrategy):
@@ -28,10 +29,17 @@ class ExtractionOperation(OperationStrategy):
 
         # Get extraction parameters
         fields = params.get("fields")
-        schema = params.get("response_format")  # Use response_format from params
+        schema = params.get("response_format")
+
+        # For simple string field (not comma-separated), just use it as-is
+        if isinstance(fields, str):
+            # Single field extraction - no comma separation needed
+            field_name = fields.strip()
+        else:
+            field_name = None
 
         # Must have either fields or schema
-        if not fields and not schema:
+        if not field_name and not schema:
             raise ValueError("Either 'fields' or 'response_format' parameter is required")
 
         # Determine if using structured output
@@ -44,15 +52,59 @@ class ExtractionOperation(OperationStrategy):
                 result = await self._extract_structured(
                     llm_client, template, item, schema, params
                 )
+                # Return JSON string for structured extraction
+                result_str = json.dumps(result)
             else:
-                # Use simple field extraction
-                result = await self._extract_fields(
-                    llm_client, template, item, fields, params
+                # Use simple field extraction - returns plain text value
+                result = await self._extract_field_value(
+                    llm_client, template, item, field_name, params
                 )
+                # Return plain text value directly
+                result_str = result
 
-            results.append({"id": item["id"], "result": result})
+            results.append({"id": item["id"], "result": result_str})
 
         return results
+
+    async def _extract_field_value(
+        self,
+        llm_client: Any,
+        template: LLMToolTemplate,
+        item: Dict[str, Any],
+        field_name: str,
+        params: Dict[str, Any]
+    ) -> str:
+        """Extract a single field value as plain text."""
+
+        # Build prompts from template
+        system_prompt = template.prompt_templates.system
+
+        # Format user prompt with field name and data
+        user_prompt = template.prompt_templates.user.format(
+            fields=field_name, text=item["data"]
+        )
+
+        # Add custom prompt if provided
+        if params.get("prompt"):
+            system_prompt += f"\n\n{params['prompt']}"
+
+        # Get model config
+        args = params.get("args") or {}
+        model = args.get("model", template.llm_config.model)
+        temperature = args.get("temperature", template.llm_config.temperature)
+
+        # Call LLM
+        response = await llm_client.chat(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            model=model,
+            temperature=temperature
+        )
+
+        # Return the plain text value (strip whitespace)
+        return response.strip()
 
     async def _extract_fields(
         self,
@@ -91,10 +143,11 @@ class ExtractionOperation(OperationStrategy):
             temperature=temperature
         )
 
-        # Parse JSON response
+        # Parse JSON response - use robust extraction
         try:
-            result = json.loads(response)
-        except json.JSONDecodeError:
+            json_str = extract_json_str(response)
+            result = json.loads(json_str)
+        except (json.JSONDecodeError, ValueError):
             # If not valid JSON, try to extract from text
             result = self._parse_text_extraction(response, fields)
 
@@ -135,11 +188,12 @@ class ExtractionOperation(OperationStrategy):
             temperature=temperature
         )
 
-        # Parse JSON response
+        # Parse JSON response - use robust extraction
         try:
-            result = json.loads(response)
-        except json.JSONDecodeError:
-            raise ValueError(f"LLM did not return valid JSON: {response}")
+            json_str = extract_json_str(response)
+            result = json.loads(json_str)
+        except (json.JSONDecodeError, ValueError) as e:
+            raise ValueError(f"LLM did not return valid JSON: {response}") from e
 
         return result
 

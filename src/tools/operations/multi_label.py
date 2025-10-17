@@ -28,11 +28,16 @@ class MultiLabelOperation(OperationStrategy):
         choices_param = self._find_choices_param(template)
         choices = params.get(choices_param, [])
 
-        if not choices or len(choices) < 2:
-            raise ValueError(f"{choices_param} must have at least 2 items")
+        # Convert comma-separated string to list
+        if isinstance(choices, str):
+            choices = [c.strip() for c in choices.split(",") if c.strip()]
 
-        # Get max_tags limit if specified
-        max_tags = params.get("max_tags")
+        if not choices or len(choices) < 1:
+            raise ValueError(f"{choices_param} must have at least 1 item")
+
+        # Get max_tags limit if specified (from args)
+        args = params.get("args") or {}
+        max_tags = args.get("max_tags")
 
         results = []
         for item in normalized_input:
@@ -70,15 +75,16 @@ class MultiLabelOperation(OperationStrategy):
             # Parse response - expect comma-separated list
             result_labels = self._parse_labels(response, choices, max_tags)
 
-            results.append({"id": item["id"], "result": result_labels})
+            # Return comma-separated string instead of array
+            results.append({"id": item["id"], "result": ",".join(result_labels)})
 
         return results
 
     def _find_choices_param(self, template: LLMToolTemplate) -> str:
         """Find the parameter that contains the choices list."""
-        # Look for array parameter (tags, labels, options, etc.)
+        # Look for array or string parameter (tags, labels, options, etc.)
         for param_name, param_def in template.parameters.items():
-            if param_def.type == "array" and param_name != "input":
+            if param_def.type in ("array", "string") and param_name != "input":
                 return param_name
         raise ValueError("No choices parameter found in template")
 

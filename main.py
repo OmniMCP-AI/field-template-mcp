@@ -16,6 +16,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Set LLM client logger to INFO to see prompts
+logging.getLogger("src.services.llm_client").setLevel(logging.INFO)
+
 # Initialize FastMCP server
 mcp = FastMCP("AI Field Template MCP Server")
 
@@ -83,7 +86,7 @@ for tool_name in tool_registry.template_loader.list_templates():
 
     # Build the function dynamically
     func_code = f'''
-async def {tool_name}_tool({params_str}) -> list:
+async def {tool_name}_tool({params_str}):
     """{description}"""
     return await tool_registry.call_tool("{tool_name}", {{k: v for k, v in locals().items()}})
 '''

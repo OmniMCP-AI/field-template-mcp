@@ -3,9 +3,10 @@
 Field Template MCP Server Integration Tests
 
 Test Functions:
-- test_classify: Test the classify_by_llm tool
-- test_tag: Test the tag_by_llm tool
-- test_extract: Test the extract_by_llm tool
+- test_list_tools: Test MCP tool discovery
+- test_classify: Test the classify tool
+- test_tag: Test the tag tool
+- test_extract: Test the extract tool
 
 Usage:
     # Run all tests (local)
@@ -15,6 +16,7 @@ Usage:
     python tests/test_mcp_client.py --env=prod --test=all
 
     # Run specific test
+    python tests/test_mcp_client.py --env=local --test=list_tools
     python tests/test_mcp_client.py --env=local --test=classify
     python tests/test_mcp_client.py --env=prod --test=tag
     python tests/test_mcp_client.py --env=local --test=extract
@@ -35,39 +37,48 @@ import argparse
 
 from dotenv import load_dotenv
 from mcp import ClientSession
-from mcp.client.streamable_http import streamablehttp_client
+from mcp.client import streamable_http
 
 # Load environment variables
 load_dotenv()
 
 
-async def test_classify(url):
-    """Test the classify_by_llm tool"""
-    print("🚀 Testing classify_by_llm Tool")
+async def test_list_tools(url):
+    """Test listing available MCP tools"""
+    print("🚀 Testing MCP Tool Discovery")
     print("=" * 60)
 
-    async with streamablehttp_client(url) as (read, write, _):
+    async with streamable_http.streamablehttp_client(url) as (read, write, _):
         async with ClientSession(read, write) as session:
             await session.initialize()
 
-            # Test 1: List available tools
-            print("\n🛠️  Test 1: Listing available MCP tools")
+            print("\n🛠️  Listing available MCP tools")
             tools = await session.list_tools()
-            print(f"✅ Found {len(tools.tools)} available tools:")
+            print(f"✅ Found {len(tools.tools)} available tools:\n")
             for i, tool in enumerate(tools.tools, 1):
-                print(f"   {i:2d}. {tool.name}: {tool.description[:80]}...")
+                print(f"   {i}. {tool.name}")
+                print(f"      Description: {tool.description[:150]}...")
+                print()
 
-            # Test 2: Classify news articles
-            print("\n📰 Test 2: Classifying news articles")
+            print("✅ Tool discovery test completed!\n")
+
+
+async def test_classify(url):
+    """Test the classify tool"""
+    print("🚀 Testing classify Tool")
+    print("=" * 60)
+
+    async with streamable_http.streamablehttp_client(url) as (read, write, _):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+
+            # Test 1: Classify news article
+            print("\n📰 Test 1: Classifying news article")
             classify_res = await session.call_tool(
-                "classify_by_llm_tool",
+                "classify_tool",
                 {
-                    "input": [
-                        "Apple releases new iPhone with AI features",
-                        "Lakers win championship game",
-                        "Senate passes new healthcare bill"
-                    ],
-                    "categories": ["tech", "sports", "politics"]
+                    "input": "Apple releases new iPhone with AI features",
+                    "categories": "tech,sports,politics"
                 }
             )
 
@@ -75,22 +86,15 @@ async def test_classify(url):
                 print(f"❌ Error: {classify_res.content[0].text if classify_res.content else 'Unknown error'}")
             else:
                 result_text = classify_res.content[0].text if classify_res.content else None
-                print(f"📦 Raw response: {result_text[:200] if result_text else 'None'}...")
-                if result_text:
-                    result = json.loads(result_text)
-                    print(f"✅ Result:")
-                    for item in result:
-                        print(f"   ID {item['id']}: {item['result']}")
-                else:
-                    print(f"❌ No response content received")
+                print(f"✅ Result: {result_text}")
 
-            # Test 3: Classify with custom prompt
-            print("\n📝 Test 3: Classifying with custom prompt")
+            # Test 2: Classify with custom prompt
+            print("\n📝 Test 2: Classifying with custom prompt")
             classify_res2 = await session.call_tool(
-                "classify_by_llm_tool",
+                "classify_tool",
                 {
-                    "input": ["It's a sunny day", "Heavy rain expected"],
-                    "categories": ["good_weather", "bad_weather"],
+                    "input": "It's a sunny day",
+                    "categories": "good_weather,bad_weather",
                     "prompt": "Classify weather descriptions"
                 }
             )
@@ -99,55 +103,43 @@ async def test_classify(url):
                 print(f"❌ Error: {classify_res2.content[0].text if classify_res2.content else 'Unknown error'}")
             else:
                 result_text = classify_res2.content[0].text if classify_res2.content else None
-                if result_text:
-                    result = json.loads(result_text)
-                    print(f"✅ Result:")
-                    for item in result:
-                        print(f"   ID {item['id']}: {item['result']}")
-                else:
-                    print(f"❌ No response content received")
+                print(f"✅ Result: {result_text}")
 
-            print("\n✅ classify_by_llm test completed!")
+            print("\n✅ classify tool test completed!")
 
 
 async def test_tag(url):
-    """Test the tag_by_llm tool"""
-    print("🚀 Testing tag_by_llm Tool")
+    """Test the tag tool"""
+    print("🚀 Testing tag Tool")
     print("=" * 60)
 
-    async with streamablehttp_client(url) as (read, write, _):
+    async with streamable_http.streamablehttp_client(url) as (read, write, _):
         async with ClientSession(read, write) as session:
             await session.initialize()
 
-            # Test 1: Tag programming projects
-            print("\n💻 Test 1: Tagging programming projects")
+            # Test 1: Tag programming project
+            print("\n💻 Test 1: Tagging programming project")
             tag_res = await session.call_tool(
-                "tag_by_llm_tool",
+                "tag_tool",
                 {
-                    "input": [
-                        "Python REST API with FastAPI",
-                        "React frontend with TypeScript",
-                        "Full-stack Next.js application"
-                    ],
-                    "tags": ["python", "javascript", "typescript", "backend", "frontend", "fullstack"]
+                    "input": "Python REST API with FastAPI",
+                    "tags": "python,javascript,typescript,backend,frontend,fullstack"
                 }
             )
 
             if tag_res.isError:
                 print(f"❌ Error: {tag_res.content[0].text if tag_res.content else 'Unknown error'}")
             else:
-                result = json.loads(tag_res.content[0].text) if tag_res.content else None
-                print(f"✅ Result:")
-                for item in result:
-                    print(f"   ID {item['id']}: tags = {item['result']}")
+                result_text = tag_res.content[0].text if tag_res.content else None
+                print(f"✅ Result: {result_text}")
 
             # Test 2: Tag with max_tags limit
             print("\n🏷️  Test 2: Tagging with max_tags=2")
             tag_res2 = await session.call_tool(
-                "tag_by_llm_tool",
+                "tag_tool",
                 {
-                    "input": ["Machine learning project with Python, TensorFlow, Docker, and REST API"],
-                    "tags": ["python", "machine-learning", "docker", "api", "tensorflow"],
+                    "input": "Machine learning project with Python, TensorFlow, Docker, and REST API",
+                    "tags": "python,machine-learning,docker,api,tensorflow",
                     "args": {"max_tags": 2}
                 }
             )
@@ -155,81 +147,64 @@ async def test_tag(url):
             if tag_res2.isError:
                 print(f"❌ Error: {tag_res2.content[0].text if tag_res2.content else 'Unknown error'}")
             else:
-                result = json.loads(tag_res2.content[0].text) if tag_res2.content else None
-                print(f"✅ Result:")
-                for item in result:
-                    print(f"   ID {item['id']}: tags = {item['result']} (max 2)")
+                result_text = tag_res2.content[0].text if tag_res2.content else None
+                print(f"✅ Result: {result_text} (max 2 tags)")
 
-            print("\n✅ tag_by_llm test completed!")
+            print("\n✅ tag tool test completed!")
 
 
 async def test_extract(url):
-    """Test the extract_by_llm tool"""
-    print("🚀 Testing extract_by_llm Tool")
+    """Test the extract tool"""
+    print("🚀 Testing extract Tool")
     print("=" * 60)
 
-    async with streamablehttp_client(url) as (read, write, _):
+    async with streamable_http.streamablehttp_client(url) as (read, write, _):
         async with ClientSession(read, write) as session:
             await session.initialize()
 
             # Test 1: Extract fields from text
             print("\n📄 Test 1: Extracting fields from text")
             extract_res = await session.call_tool(
-                "extract_by_llm_tool",
+                "extract_tool",
                 {
-                    "input": [
-                        "Article by John Smith published on 2025-01-15 about AI",
-                        "Blog post by Jane Doe from 2025-02-20 covering machine learning"
-                    ],
-                    "fields": ["author", "date", "topic"]
+                    "input": "Article by John Smith published on 2025-01-15 about AI",
+                    # "fields": "author,date,topic"
+                     "fields": "date"
                 }
             )
 
             if extract_res.isError:
                 print(f"❌ Error: {extract_res.content[0].text if extract_res.content else 'Unknown error'}")
             else:
-                result = json.loads(extract_res.content[0].text) if extract_res.content else None
-                print(f"✅ Result:")
-                for item in result:
-                    print(f"   ID {item['id']}: {item['result']}")
+                result_text = extract_res.content[0].text if extract_res.content else None
+                print(f"✅ Result: {result_text}")
 
-            # Test 2: Extract with response_format
-            print("\n🔍 Test 2: Extracting with structured response format")
+            # Test 2: Extract another example
+            print("\n🔍 Test 2: Extracting from blog post")
             extract_res2 = await session.call_tool(
-                "extract_by_llm_tool",
+                "extract_tool",
                 {
-                    "input": ["Contributors: Alice, Bob, Charlie. Tags: python, api, testing"],
-                    "response_format": {
-                        "type": "object",
-                        "properties": {
-                            "contributors": {
-                                "type": "array",
-                                "items": {"type": "string"}
-                            },
-                            "tags": {
-                                "type": "array",
-                                "items": {"type": "string"}
-                            }
-                        }
-                    }
+                    "input": "Blog post by Jane Doe from 2025-02-20 covering machine learning",
+                    "fields": "author" # ,date,topic
                 }
             )
 
             if extract_res2.isError:
                 print(f"❌ Error: {extract_res2.content[0].text if extract_res2.content else 'Unknown error'}")
             else:
-                result = json.loads(extract_res2.content[0].text) if extract_res2.content else None
-                print(f"✅ Result:")
-                for item in result:
-                    print(f"   ID {item['id']}: {item['result']}")
+                result_text = extract_res2.content[0].text if extract_res2.content else None
+                print(f"✅ Result: {result_text}")
 
-            print("\n✅ extract_by_llm test completed!")
+            print("\n✅ extract tool test completed!")
 
 
 async def test_all(url):
     """Run all tests"""
     print("🧪 Running ALL Tests")
     print("=" * 60)
+    
+    await test_list_tools(url)
+    print("\n" + "=" * 60 + "\n")
     
     await test_classify(url)
     print("\n" + "=" * 60 + "\n")
@@ -258,7 +233,7 @@ def main():
     )
     parser.add_argument(
         "--test",
-        choices=["all", "classify", "tag", "extract"],
+        choices=["all", "list_tools", "classify", "tag", "extract"],
         default="all",
         help="Which test to run",
     )
@@ -283,6 +258,8 @@ def main():
     # Run selected test
     if args.test == "all":
         asyncio.run(test_all(url))
+    elif args.test == "list_tools":
+        asyncio.run(test_list_tools(url))
     elif args.test == "classify":
         asyncio.run(test_classify(url))
     elif args.test == "tag":

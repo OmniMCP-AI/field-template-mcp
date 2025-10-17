@@ -60,6 +60,7 @@ httpcore==1.0.9
 httpx==0.28.1
     # via fastmcp
     # via mcp
+    # via mcp-template
     # via openai
 httpx-sse==0.4.3
     # via mcp
@@ -168,10 +169,14 @@ six==1.17.0
 sniffio==1.3.1
     # via anyio
     # via openai
+socksio==1.0.0
+    # via httpx
 sse-starlette==3.0.2
     # via mcp
 starlette==0.48.0
     # via mcp
+structlog==25.4.0
+    # via mcp-template
 tqdm==4.67.1
     # via openai
 typing-extensions==4.15.0

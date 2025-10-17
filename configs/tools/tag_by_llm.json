@@ -1,5 +1,5 @@
 {
-  "tool_name": "tag_by_llm",
+  "tool_name": "tag",
   "operation_type": "multi_label",
   "description": "Applies multiple relevant tags to text content using intelligent LLM semantic analysis. Perfect for content organization, search indexing, filtering, and multi-dimensional categorization where items can belong to several categories simultaneously. Supports batch tagging, tag limits, relevance thresholds, and confidence scoring. Unlike single-category classification, this tool can assign zero to many tags per input based on content relevance.",
   "category": "tagging",
@@ -11,20 +11,18 @@
     "max_tokens": 200
   },
   "prompt_templates": {
-    "system": "You are a tagging expert. Your task is to apply relevant tags from a predefined list to the given text.\n\nRules:\n- You can apply 0 to N tags per input\n- Only use tags from the provided list\n- Apply all tags that are relevant to the content\n- Return tags as a JSON array of strings\n- If no tags are relevant, return an empty array []",
-    "user": "Available tags: {tags}\n\nText to tag:\n{text}\n\nRelevant tags (as JSON array):"
+    "system": "You are a tagging expert. Your task is to apply relevant tags from a predefined list to the given text.\n\nRules:\n- You can apply 0 to N tags per input\n- Only use tags from the provided list (exact match, case-sensitive)\n- Apply all tags that are relevant to the content\n- Return ONLY the tags as a comma-separated list\n- If no tags are relevant, return an empty string\n- Do not include any other text, explanation, or formatting\n\nExample:\nAvailable tags: python, javascript, backend, frontend, database\nText: Building a REST API with FastAPI and PostgreSQL\nRelevant tags: python, backend, database",
+    "user": "Available tags: {tags}\n\nText to tag:\n{text}\n\nRelevant tags (comma-separated):"
   },
   "parameters": {
     "input": {
-      "type": "array",
-      "description": "Array of text items to tag. Each item can be a string or an object with 'id' and 'data' fields. Supports articles, products, documents, user queries, or any content needing multi-label categorization.",
+      "type": "string",
+      "description": "Text content to tag. Supports articles, products, documents, user queries, or any content needing multi-label categorization.",
       "required": true
     },
     "tags": {
-      "type": "array",
-      "items": {"type": "string"},
-      "description": "Complete list of available tag options to choose from (minimum 1 required). Tags are non-mutually exclusive - multiple tags can be applied to a single input. Use descriptive tag names like 'python', 'backend', 'api', 'machine-learning' for better semantic matching.",
-      "minItems": 1,
+      "type": "string",
+      "description": "Comma-separated list of available tag options to choose from (minimum 1 required). Tags are non-mutually exclusive - multiple tags can be applied to a single input. Use descriptive tag names like 'python,backend,api,machine-learning' for better semantic matching.",
       "required": true
     },
     "prompt": {
@@ -46,59 +44,25 @@
     }
   },
   "output_format": {
-    "type": "array",
-    "items": {
-      "type": "object",
-      "properties": {
-        "id": {"type": ["integer", "string"]},
-        "result": {
-          "type": "array",
-          "items": {
-            "oneOf": [
-              {"type": "string"},
-              {
-                "type": "object",
-                "properties": {
-                  "tag": {"type": "string"},
-                  "score": {"type": "number"}
-                }
-              }
-            ]
-          }
-        },
-        "error": {"type": "string"}
-      },
-      "required": ["id", "result"]
-    }
+    "type": "string",
+    "description": "Comma-separated list of relevant tags applied to the input"
   },
   "examples": [
     {
       "description": "Basic tagging",
       "input": {
-        "input": ["Python REST API", "React frontend app"],
-        "tags": ["python", "javascript", "database", "backend", "frontend"]
+        "input": "Python REST API",
+        "tags": "python,javascript,database,backend,frontend"
       },
-      "output": [
-        {"id": 0, "result": ["python", "backend"]},
-        {"id": 1, "result": ["javascript", "frontend"]}
-      ]
+      "output": "python,backend"
     },
     {
-      "description": "With scores and max tags",
+      "description": "Another example",
       "input": {
-        "input": [{"id": "proj_1", "data": "Full-stack web app"}],
-        "tags": ["python", "javascript", "backend", "frontend", "database"],
-        "args": {"max_tags": 2, "include_scores": true}
+        "input": "React frontend app",
+        "tags": "python,javascript,database,backend,frontend"
       },
-      "output": [
-        {
-          "id": "proj_1",
-          "result": [
-            {"tag": "backend", "score": 0.9},
-            {"tag": "frontend", "score": 0.85}
-          ]
-        }
-      ]
+      "output": "javascript,frontend"
     }
   ]
 }

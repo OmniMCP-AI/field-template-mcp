@@ -97,11 +97,17 @@ class DynamicToolRegistry:
         Returns:
             JSON Schema for tool outputs
         """
-        return template.get("output_format", {
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "type": "array",
-            "items": {"type": "object"}
-        })
+        output_format = template.get("output_format")
+
+        # If output_format is defined, use it
+        if output_format:
+            return {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                **output_format
+            }
+
+        # Default: no validation
+        return None
 
     def _build_description(self, template: Dict[str, Any]) -> str:
         """

@@ -1,5 +1,5 @@
 {
-  "tool_name": "extract_by_llm",
+  "tool_name": "extract",
   "operation_type": "extraction",
   "description": "Extracts structured data fields from unstructured text using advanced LLM semantic understanding and natural language processing. Ideal for parsing documents, forms, emails, articles, or any text to extract specific information like names, dates, amounts, entities, or custom fields. Supports simple field lists or complex JSON schemas with nested objects and arrays. Returns structured JSON output with automatic type handling and null values for missing data.",
   "category": "extraction",
@@ -11,26 +11,19 @@
     "max_tokens": 1000
   },
   "prompt_templates": {
-    "system": "You are a data extraction expert. Your task is to extract specific fields from unstructured text.\n\nRules:\n- Extract exactly the fields specified\n- If a field is not found, use null\n- Return result as JSON object with field names as keys\n- Be accurate and precise in extraction",
-    "user": "Fields to extract: {fields}\n\nText:\n{text}\n\nExtracted data (as JSON):",
-    "structured_system": "You are a data extraction expert. Extract information according to the provided schema.\n\nRules:\n- Follow the schema structure exactly\n- Use correct data types (string, number, array, object, boolean)\n- If a field is not found and not required, you may omit it or use null\n- Ensure all required fields are present"
+    "system": "You are a data extraction expert. Your task is to extract a specific field value from unstructured text.\n\nRules:\n- Extract ONLY the value of the requested field\n- Return ONLY the extracted value as plain text, nothing else\n- Do NOT return JSON, do NOT include the field name\n- If the field is not found, return null\n- Be accurate and precise in extraction\n\nExample:\nField: author\nText: Article by John Smith on 2025-01-15\nExtracted value: John Smith",
+    "user": "Field to extract: {fields}\n\nText:\n{text}\n\nExtracted value:"
   },
   "parameters": {
     "input": {
-      "type": "array",
-      "description": "Array of text items to extract data from. Each item can be a string or an object with 'id' and 'data' fields. Supports any unstructured text including documents, emails, forms, articles, chat transcripts, or web content.",
+      "type": "string",
+      "description": "Text content to extract data from. Supports any unstructured text including documents, emails, forms, articles, chat transcripts, or web content.",
       "required": true
     },
     "fields": {
-      "type": "array",
-      "items": {"type": "string"},
-      "description": "Simple list of field names to extract from the text (e.g., ['author', 'date', 'topic']). Use this for straightforward extractions where field names are self-explanatory. Required if 'response_format' is not provided. For complex nested structures, use 'response_format' instead.",
-      "required": false
-    },
-    "response_format": {
-      "type": "object",
-      "description": "JSON Schema defining the exact structure of extracted data (OpenAI structured outputs compatible). Use this for complex extractions requiring specific types, nested objects, arrays, or validation rules. Must include 'type', 'properties', and optionally 'required' fields. Takes precedence over 'fields' parameter if both are provided.",
-      "required": false
+      "type": "string",
+      "description": "Single field name to extract from the text (e.g., 'author' or 'date'). Use this for simple extractions where you want just one value.",
+      "required": true
     },
     "args": {
       "type": "object",
@@ -44,57 +37,26 @@
       "required": false
     }
   },
-  "validation": {
-    "oneOf_required": ["fields", "response_format"]
-  },
   "output_format": {
-    "type": "array",
-    "items": {
-      "type": "object",
-      "properties": {
-        "id": {"type": ["integer", "string"]},
-        "result": {"type": ["object", "null"]},
-        "error": {"type": "string"}
-      },
-      "required": ["id"]
-    }
+    "type": "string",
+    "description": "The extracted field value as plain text (e.g., 'Jane Doe')"
   },
   "examples": [
     {
-      "description": "Multi-field extraction",
+      "description": "Extract author name",
       "input": {
-        "input": ["Article by Wade on 2025-10-12 about AI"],
-        "fields": ["author", "date", "topic"]
+        "input": "Article by Wade on 2025-10-12 about AI",
+        "fields": "author"
       },
-      "output": [
-        {
-          "id": 0,
-          "result": {"author": "Wade", "date": "2025-10-12", "topic": "AI"}
-        }
-      ]
+      "output": "Wade"
     },
     {
-      "description": "Structured output with arrays",
+      "description": "Extract date",
       "input": {
-        "input": ["Article by Wade and Smith. Tags: AI, tech"],
-        "response_format": {
-          "type": "object",
-          "properties": {
-            "authors": {"type": "array", "items": {"type": "string"}},
-            "tags": {"type": "array", "items": {"type": "string"}}
-          },
-          "required": ["authors"]
-        }
+        "input": "Article by Wade on 2025-10-12 about AI",
+        "fields": "date"
       },
-      "output": [
-        {
-          "id": 0,
-          "result": {
-            "authors": ["Wade", "Smith"],
-            "tags": ["AI", "tech"]
-          }
-        }
-      ]
+      "output": "2025-10-12"
     }
   ]
 }

@@ -6,9 +6,13 @@ Supports OpenAI and OpenAI-compatible APIs.
 
 import os
 import json
+import logging
 from typing import List, Dict, Any, Optional
 
 from openai import OpenAI
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 
 class LLMClient:
@@ -103,6 +107,15 @@ class LLMClient:
         # Get appropriate client based on model name
         client = self._get_client(model)
 
+        # Log the prompt being sent
+        logger.info("=" * 80)
+        logger.info(f"📤 LLM REQUEST | Model: {model} | Temperature: {temperature} | Max Tokens: {max_tokens}")
+        logger.info("-" * 80)
+        for i, msg in enumerate(messages, 1):
+            logger.info(f"Message {i} [{msg['role'].upper()}]:")
+            logger.info(msg['content'])
+            logger.info("-" * 80)
+
         # Call OpenAI API
         response = client.chat.completions.create(
             model=model,
@@ -110,7 +123,15 @@ class LLMClient:
             temperature=temperature,
             max_tokens=max_tokens
         )
-        return response.choices[0].message.content
+        
+        response_content = response.choices[0].message.content
+        
+        # Log the response
+        logger.info(f"📥 LLM RESPONSE:")
+        logger.info(response_content)
+        logger.info("=" * 80)
+        
+        return response_content
 
     async def structured_output(
         self,
@@ -172,6 +193,15 @@ class LLMClient:
                 "content": "You are a helpful assistant that outputs valid JSON." + schema_instruction
             })
 
+        # Log the prompt being sent
+        logger.info("=" * 80)
+        logger.info(f"📤 LLM STRUCTURED REQUEST | Model: {model} | Temperature: {temperature}")
+        logger.info("-" * 80)
+        for i, msg in enumerate(modified_messages, 1):
+            logger.info(f"Message {i} [{msg['role'].upper()}]:")
+            logger.info(msg['content'])
+            logger.info("-" * 80)
+
         response = client.chat.completions.create(
             model=model,
             messages=modified_messages,
@@ -179,8 +209,15 @@ class LLMClient:
             response_format={"type": "json_object"}
         )
 
+        response_content = response.choices[0].message.content
+        
+        # Log the response
+        logger.info(f"📥 LLM STRUCTURED RESPONSE:")
+        logger.info(response_content)
+        logger.info("=" * 80)
+
         # Parse JSON response
-        return json.loads(response.choices[0].message.content)
+        return json.loads(response_content)
 
     def get_default_model(self) -> str:
         """Get default model for current provider."""

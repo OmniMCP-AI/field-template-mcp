@@ -28,6 +28,10 @@ class SingleChoiceOperation(OperationStrategy):
         choices_param = self._find_choices_param(template)
         choices = params.get(choices_param, [])
 
+        # Convert comma-separated string to list
+        if isinstance(choices, str):
+            choices = [c.strip() for c in choices.split(",") if c.strip()]
+
         if not choices or len(choices) < 2:
             raise ValueError(f"{choices_param} must have at least 2 items")
 
@@ -72,9 +76,9 @@ class SingleChoiceOperation(OperationStrategy):
 
     def _find_choices_param(self, template: LLMToolTemplate) -> str:
         """Find the parameter that contains the choices list."""
-        # Look for array parameter (categories, tags, options, etc.)
+        # Look for array or string parameter (categories, tags, options, etc.)
         for param_name, param_def in template.parameters.items():
-            if param_def.type == "array" and param_name != "input":
+            if param_def.type in ("array", "string") and param_name != "input":
                 return param_name
         raise ValueError("No choices parameter found in template")
 
