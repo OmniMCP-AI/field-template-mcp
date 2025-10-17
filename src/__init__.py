@@ -1,5 +1,5 @@
 """
-MCP Template Source Package
+AI Field Template Source Package
 """
 
 __version__ = "1.0.0"

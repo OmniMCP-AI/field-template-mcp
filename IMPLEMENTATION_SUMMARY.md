@@ -57,7 +57,7 @@ Added:
 
 - ✅ `OPENAI_API_KEY` - API key for OpenAI or OpenRouter
 - ✅ `OPENAI_BASE_URL` - Optional custom endpoint
-- ✅ `OPENAI_MODEL` - Model selection (default: gpt-4o-mini)
+- ✅ `LLM_MODEL` - Model selection (default: gpt-4o-mini)
 - ✅ Documented examples for both OpenAI and OpenRouter
 
 ### 5. Enhanced Main Server
@@ -133,7 +133,7 @@ python test/test_mcp_client.py --env=local --test=summarize
 
 **Server Start:**
 ```
-🚀 MCP Template Server
+🚀 AI Field Template Server
 =========================
 📋 Server Information:
    📦 Version: 1.0.0
@@ -177,14 +177,14 @@ INFO - OpenAI client initialized successfully
 ### Option 1: OpenAI (Direct)
 ```bash
 OPENAI_API_KEY=sk-proj-...
-OPENAI_MODEL=gpt-4o-mini  # or gpt-4o, gpt-3.5-turbo
+LLM_MODEL=gpt-4o-mini  # or gpt-4o, gpt-3.5-turbo
 ```
 
 ### Option 2: OpenRouter (Multiple LLM Providers)
 ```bash
 OPENAI_API_KEY=sk-or-v1-...
 OPENAI_BASE_URL=https://openrouter.ai/api/v1
-OPENAI_MODEL=openai/gpt-4o-mini
+LLM_MODEL=openai/gpt-4o-mini
 
 # Other models available:
 # - anthropic/claude-3-opus

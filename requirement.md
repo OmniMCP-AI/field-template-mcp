@@ -1,6 +1,6 @@
 # requirement 
 use /Users/dengwei/work/ai/omni/DataTable-MCP
-for generate a mcp template 
+for generate a AI Field Template 
 
 use fastmcp
 with dockerfile , readme, .gitignore(python), .env

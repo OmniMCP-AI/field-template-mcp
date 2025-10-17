@@ -12,7 +12,7 @@ from openai import OpenAI
 
 
 class LLMClient:
-    """OpenAI-based LLM client."""
+    """OpenAI-based LLM client with OpenRouter support."""
 
     def __init__(self, provider: str = "openai"):
         """
@@ -25,16 +25,49 @@ class LLMClient:
             ValueError: If API key is missing
         """
         self.provider = "openai"
+        
+        # Check if we have API keys available
+        openai_key = os.getenv("OPENAI_API_KEY")
+        openrouter_key = os.getenv("OPENROUTER_API_KEY")
+        
+        if not openai_key and not openrouter_key:
+            raise ValueError("Either OPENAI_API_KEY or OPENROUTER_API_KEY must be set")
 
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY environment variable not set")
+        # Initialize client (will be set per-request based on model)
+        self.openai_client = None
+        self.openrouter_client = None
+        
+        if openai_key:
+            self.openai_client = OpenAI(api_key=openai_key)
+        
+        if openrouter_key:
+            self.openrouter_client = OpenAI(
+                api_key=openrouter_key,
+                base_url="https://openrouter.ai/api/v1"
+            )
 
-        base_url = os.getenv("OPENAI_BASE_URL")
-        if base_url:
-            self.client = OpenAI(api_key=api_key, base_url=base_url)
+    def _get_client(self, model: str) -> OpenAI:
+        """
+        Get appropriate client based on model name.
+        
+        Args:
+            model: Model name (e.g., "gpt-4o-mini" or "openai/gpt-4o-mini")
+        
+        Returns:
+            OpenAI client instance
+        
+        Raises:
+            ValueError: If appropriate API key not found
+        """
+        # If model contains "/", use OpenRouter
+        if "/" in model:
+            if not self.openrouter_client:
+                raise ValueError("OPENROUTER_API_KEY not set but model requires OpenRouter")
+            return self.openrouter_client
         else:
-            self.client = OpenAI(api_key=api_key)
+            if not self.openai_client:
+                raise ValueError("OPENAI_API_KEY not set but model requires OpenAI")
+            return self.openai_client
 
     async def chat(
         self,
@@ -49,6 +82,8 @@ class LLMClient:
         Args:
             messages: List of message dicts with 'role' and 'content'
             model: Model name (uses gpt-4o-mini if None)
+                   For OpenAI: "gpt-4o-mini", "gpt-4o", etc.
+                   For OpenRouter: "openai/gpt-4o-mini", "anthropic/claude-3-5-sonnet", etc.
             temperature: Sampling temperature (0.0 to 1.0)
             max_tokens: Maximum tokens to generate
 
@@ -63,10 +98,13 @@ class LLMClient:
         """
         # Use default model if not specified
         if model is None:
-            model = "gpt-4o-mini"
+            model = os.getenv("LLM_MODEL", "openai/gpt-4o-mini")
+
+        # Get appropriate client based on model name
+        client = self._get_client(model)
 
         # Call OpenAI API
-        response = self.client.chat.completions.create(
+        response = client.chat.completions.create(
             model=model,
             messages=messages,
             temperature=temperature,
@@ -88,6 +126,8 @@ class LLMClient:
             messages: List of message dicts
             schema: JSON Schema defining expected output structure
             model: Model name (uses gpt-4o-mini if None)
+                   For OpenAI: "gpt-4o-mini", "gpt-4o", etc.
+                   For OpenRouter: "openai/gpt-4o-mini", "anthropic/claude-3-5-sonnet", etc.
             temperature: Sampling temperature
 
         Returns:
@@ -104,7 +144,10 @@ class LLMClient:
             >>> result = await client.structured_output(messages, schema)
         """
         if model is None:
-            model = "gpt-4o-mini"
+            model = os.getenv("LLM_MODEL", "openai/gpt-4o-mini")
+
+        # Get appropriate client based on model name
+        client = self._get_client(model)
 
         # Add JSON schema instruction to system message
         schema_instruction = f"\n\nYou must respond with valid JSON matching this schema:\n{json.dumps(schema, indent=2)}"
@@ -129,7 +172,7 @@ class LLMClient:
                 "content": "You are a helpful assistant that outputs valid JSON." + schema_instruction
             })
 
-        response = self.client.chat.completions.create(
+        response = client.chat.completions.create(
             model=model,
             messages=modified_messages,
             temperature=temperature,
@@ -141,7 +184,7 @@ class LLMClient:
 
     def get_default_model(self) -> str:
         """Get default model for current provider."""
-        return "gpt-4o-mini"
+        return os.getenv("LLM_MODEL", "openai/gpt-4o-mini")
 
 
 # Global client instance (initialized on first use)
@@ -165,9 +208,12 @@ def get_llm_client(provider: Optional[str] = None) -> LLMClient:
     global _global_client
 
     if _global_client is None:
-        # Check for API key
-        if not os.getenv("OPENAI_API_KEY"):
-            raise ValueError("OPENAI_API_KEY environment variable not set")
+        # Check for at least one API key
+        openai_key = os.getenv("OPENAI_API_KEY")
+        openrouter_key = os.getenv("OPENROUTER_API_KEY")
+        
+        if not openai_key and not openrouter_key:
+            raise ValueError("Either OPENAI_API_KEY or OPENROUTER_API_KEY must be set")
 
         _global_client = LLMClient("openai")
 

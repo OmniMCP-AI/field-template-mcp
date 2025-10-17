@@ -1,4 +1,4 @@
-# MCP Template
+# AI Field Template
 
 A template for building Model Context Protocol (MCP) servers using FastMCP.
 
@@ -87,35 +87,67 @@ If you want to use [OpenRouter](https://openrouter.ai/) for accessing multiple L
 
 ## Available Tools
 
-### 1. hello
-A simple greeting tool to test the MCP connection.
+### 1. classify_by_llm
+Classify each input into exactly ONE best-matching category using LLM.
 
 **Parameters:**
-- `name` (str): The name to greet
-
-**Example:**
-```python
-result = await session.call_tool("hello", {"name": "World"})
-# Returns: "Hello, World!"
-```
-
-### 2. summarize_text
-Summarize text using OpenAI/OpenRouter LLM to generate concise summaries.
-
-**Parameters:**
-- `text` (str): The text to summarize
-- `max_words` (int, optional): Maximum number of words for the summary (default: 50)
+- `input` (list): Items to classify
+- `categories` (list[str]): Possible categories (mutually exclusive, min 2)
+- `prompt` (str, optional): Custom classification instructions
+- `args` (dict, optional): Additional config (model, temperature, etc.)
 
 **Example:**
 ```python
 result = await session.call_tool(
-    "summarize_text",
+    "classify_by_llm",
     {
-        "text": "Long text here...",
-        "max_words": 30
+        "input": ["Apple releases iPhone", "Lakers win game"],
+        "categories": ["tech", "sports", "politics"]
     }
 )
-# Returns: A concise summary
+# Returns: [{"id": 0, "result": "tech"}, {"id": 1, "result": "sports"}]
+```
+
+### 2. tag_by_llm
+Apply multiple relevant tags from a predefined set to each input.
+
+**Parameters:**
+- `input` (list): Items to tag
+- `tags` (list[str]): Possible tags (non-mutually exclusive)
+- `prompt` (str, optional): Custom tagging instructions
+- `args` (dict, optional): Additional config (max_tags, min_relevance, etc.)
+
+**Example:**
+```python
+result = await session.call_tool(
+    "tag_by_llm",
+    {
+        "input": ["Python REST API", "React app"],
+        "tags": ["python", "javascript", "backend", "frontend"]
+    }
+)
+# Returns: [{"id": 0, "result": ["python", "backend"]}, ...]
+```
+
+### 3. extract_by_llm
+Extract specific fields from unstructured text using LLM.
+
+**Parameters:**
+- `input` (list): Items to extract from
+- `fields` (list[str], optional): Field names to extract
+- `response_format` (dict, optional): JSON Schema for structured output
+- `args` (dict, optional): Additional config (model, temperature, etc.)
+
+**Example:**
+```python
+result = await session.call_tool(
+    "extract_by_llm",
+    {
+        "input": ["Article by Wade on 2025-10-12"],
+        "fields": ["author", "date"]
+    }
+)
+# Returns: [{"id": 0, "result": {"author": "Wade", "date": "2025-10-12"}}]
 ```
 
 ## Testing
@@ -126,24 +158,27 @@ The project includes comprehensive tests for all MCP tools.
 
 ```bash
 # Make sure the server is running first
-python main.py --transport streamable-http --port 8321
+python main.py --transport streamable-http --port 8322
 
 # In another terminal, run the tests
 # Run all tests
-python test/test_mcp_client.py --env=local --test=all
+rye run python tests/test_mcp_client.py --env=local --test=all
 
 # Run specific test
-python test/test_mcp_client.py --env=local --test=hello
-python test/test_mcp_client.py --env=local --test=summarize
+rye run python tests/test_mcp_client.py --env=local --test=classify
+rye run python tests/test_mcp_client.py --env=local --test=tag
+rye run python tests/test_mcp_client.py --env=local --test=extract
 
 # Test against a remote server
-python test/test_mcp_client.py --env=remote --url=https://your-server.com --test=all
+rye run python tests/test_mcp_client.py --env=remote --url=https://your-server.com --test=all
 ```
 
 ### Test Requirements
 
-For the `summarize_text` test to work, you need to:
-1. Set  key  in your `.env` file refer to env.example
+For the LLM tools tests to work, you need to:
+1. Set `OPENAI_API_KEY` in your `.env` file (refer to env.example)
+2. Optionally configure `OPENAI_BASE_URL` for OpenRouter
+3. Ensure the server is running on port 8322
 
 ## Development
 
