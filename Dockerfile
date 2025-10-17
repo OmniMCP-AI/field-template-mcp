@@ -11,21 +11,11 @@ RUN apt-get update && apt-get install -y \
 RUN pip install --no-cache-dir uv
 
 # Copy dependency files first for better layer caching
-COPY pyproject.toml requirements.txt* ./
+COPY requirements.lock ./
 
-# Install Python dependencies from requirements.txt if it exists, otherwise from pyproject.toml
-RUN if [ -f requirements.txt ]; then \
-        uv pip install --system --no-cache -r requirements.txt; \
-    else \
-        uv pip install --system --no-cache \
-            fastmcp>=2.3.3 \
-            python-dotenv>=1.1.1 \
-            openai>=2.4.0 \
-            anthropic>=0.39.0 \
-            mcp>=1.1.2 \
-            jsonschema>=4.25.1 \
-            pydantic>=2.0.0; \
-    fi
+# Install Python dependencies from lock file (skip -e file:. line for Docker)
+RUN grep -v "^-e file:" requirements.lock > requirements-docker.txt && \
+    uv pip install --system -r requirements-docker.txt
 
 # Copy application code
 COPY main.py ./

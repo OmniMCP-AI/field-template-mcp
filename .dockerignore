@@ -51,6 +51,10 @@ docs/
 .env.*
 !.env.example
 
+# Keep lock files for reproducible builds
+!requirements.lock
+!requirements-dev.lock
+
 # Docker
 Dockerfile
 docker-compose.yml

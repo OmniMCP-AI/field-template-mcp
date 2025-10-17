@@ -1,19 +1,14 @@
 # field-template-mcp
 
 # Core dependencies
-fastmcp>=0.2.0
+fastmcp>=2.3.3
+python-dotenv>=1.1.1
+openai>=2.4.0
+anthropic>=0.39.0
+mcp>=1.1.2
+jsonschema>=4.25.1
 pydantic>=2.0.0
 
-# LLM providers
-anthropic>=0.39.0
-openai>=1.54.0
-
-# Testing
+# Testing (dev dependencies - not needed in Docker)
 pytest>=8.0.0
 pytest-asyncio>=0.24.0
-
-# Utilities
-python-dotenv>=1.0.0
-
-# JSON Schema validation
-jsonschema>=4.23.0
