@@ -8,13 +8,19 @@ Test Functions:
 - test_extract: Test the extract_by_llm tool
 
 Usage:
-    # Run all tests
+    # Run all tests (local)
     python tests/test_mcp_client.py --env=local --test=all
+    
+    # Run tests on prod environment
+    python tests/test_mcp_client.py --env=prod --test=all
 
     # Run specific test
     python tests/test_mcp_client.py --env=local --test=classify
-    python tests/test_mcp_client.py --env=local --test=tag
+    python tests/test_mcp_client.py --env=prod --test=tag
     python tests/test_mcp_client.py --env=local --test=extract
+    
+    # Run with custom URL
+    python tests/test_mcp_client.py --env=remote --url=https://your-server.com/sse --test=all
 
 Environment Variables Required:
 - OPENAI_API_KEY (for LLM tools)
@@ -40,7 +46,7 @@ async def test_classify(url):
     print("🚀 Testing classify_by_llm Tool")
     print("=" * 60)
 
-    async with streamablehttp_client(url=url) as (read, write, _):
+    async with streamablehttp_client(url) as (read, write, _):
         async with ClientSession(read, write) as session:
             await session.initialize()
 
@@ -54,7 +60,7 @@ async def test_classify(url):
             # Test 2: Classify news articles
             print("\n📰 Test 2: Classifying news articles")
             classify_res = await session.call_tool(
-                "classify_by_llm",
+                "classify_by_llm_tool",
                 {
                     "input": [
                         "Apple releases new iPhone with AI features",
@@ -64,7 +70,7 @@ async def test_classify(url):
                     "categories": ["tech", "sports", "politics"]
                 }
             )
-            
+
             if classify_res.isError:
                 print(f"❌ Error: {classify_res.content[0].text if classify_res.content else 'Unknown error'}")
             else:
@@ -81,14 +87,14 @@ async def test_classify(url):
             # Test 3: Classify with custom prompt
             print("\n📝 Test 3: Classifying with custom prompt")
             classify_res2 = await session.call_tool(
-                "classify_by_llm",
+                "classify_by_llm_tool",
                 {
                     "input": ["It's a sunny day", "Heavy rain expected"],
                     "categories": ["good_weather", "bad_weather"],
                     "prompt": "Classify weather descriptions"
                 }
             )
-            
+
             if classify_res2.isError:
                 print(f"❌ Error: {classify_res2.content[0].text if classify_res2.content else 'Unknown error'}")
             else:
@@ -109,14 +115,14 @@ async def test_tag(url):
     print("🚀 Testing tag_by_llm Tool")
     print("=" * 60)
 
-    async with streamablehttp_client(url=url) as (read, write, _):
+    async with streamablehttp_client(url) as (read, write, _):
         async with ClientSession(read, write) as session:
             await session.initialize()
 
             # Test 1: Tag programming projects
             print("\n💻 Test 1: Tagging programming projects")
             tag_res = await session.call_tool(
-                "tag_by_llm",
+                "tag_by_llm_tool",
                 {
                     "input": [
                         "Python REST API with FastAPI",
@@ -126,7 +132,7 @@ async def test_tag(url):
                     "tags": ["python", "javascript", "typescript", "backend", "frontend", "fullstack"]
                 }
             )
-            
+
             if tag_res.isError:
                 print(f"❌ Error: {tag_res.content[0].text if tag_res.content else 'Unknown error'}")
             else:
@@ -138,14 +144,14 @@ async def test_tag(url):
             # Test 2: Tag with max_tags limit
             print("\n🏷️  Test 2: Tagging with max_tags=2")
             tag_res2 = await session.call_tool(
-                "tag_by_llm",
+                "tag_by_llm_tool",
                 {
                     "input": ["Machine learning project with Python, TensorFlow, Docker, and REST API"],
                     "tags": ["python", "machine-learning", "docker", "api", "tensorflow"],
                     "args": {"max_tags": 2}
                 }
             )
-            
+
             if tag_res2.isError:
                 print(f"❌ Error: {tag_res2.content[0].text if tag_res2.content else 'Unknown error'}")
             else:
@@ -162,14 +168,14 @@ async def test_extract(url):
     print("🚀 Testing extract_by_llm Tool")
     print("=" * 60)
 
-    async with streamablehttp_client(url=url) as (read, write, _):
+    async with streamablehttp_client(url) as (read, write, _):
         async with ClientSession(read, write) as session:
             await session.initialize()
 
             # Test 1: Extract fields from text
             print("\n📄 Test 1: Extracting fields from text")
             extract_res = await session.call_tool(
-                "extract_by_llm",
+                "extract_by_llm_tool",
                 {
                     "input": [
                         "Article by John Smith published on 2025-01-15 about AI",
@@ -178,7 +184,7 @@ async def test_extract(url):
                     "fields": ["author", "date", "topic"]
                 }
             )
-            
+
             if extract_res.isError:
                 print(f"❌ Error: {extract_res.content[0].text if extract_res.content else 'Unknown error'}")
             else:
@@ -190,7 +196,7 @@ async def test_extract(url):
             # Test 2: Extract with response_format
             print("\n🔍 Test 2: Extracting with structured response format")
             extract_res2 = await session.call_tool(
-                "extract_by_llm",
+                "extract_by_llm_tool",
                 {
                     "input": ["Contributors: Alice, Bob, Charlie. Tags: python, api, testing"],
                     "response_format": {
@@ -208,7 +214,7 @@ async def test_extract(url):
                     }
                 }
             )
-            
+
             if extract_res2.isError:
                 print(f"❌ Error: {extract_res2.content[0].text if extract_res2.content else 'Unknown error'}")
             else:
@@ -240,9 +246,9 @@ def main():
     parser = argparse.ArgumentParser(description="Test Field Template MCP Server")
     parser.add_argument(
         "--env",
-        choices=["local", "remote"],
+        choices=["local", "prod", "remote"],
         default="local",
-        help="Environment to use: local (127.0.0.1:8322) or remote (custom URL)",
+        help="Environment to use: local (127.0.0.1:8322), prod (omnimcp.ai), or remote (custom URL)",
     )
     parser.add_argument(
         "--url",
@@ -261,14 +267,17 @@ def main():
     
     # Determine URL
     if args.env == "local":
+        # FastMCP streamable-http uses /mcp endpoint
         url = "http://127.0.0.1:8322/mcp"
+    elif args.env == "prod":
+        url = "https://be-dev.omnimcp.ai/api/v1/mcp/a6ebdc49-50e7-4c54-8d2a-639f10098a63/68f1a606ca402315fcf9cc90/sse"
     elif args.env == "remote":
         if not args.url:
             print("❌ Error: --url required for remote environment")
             return
-        url = args.url if args.url.endswith("/mcp") else f"{args.url}/mcp"
+        url = args.url
     
-    print(f"🔗 Using {'local' if args.env == 'local' else 'remote'} environment: {url}")
+    print(f"🔗 Using {args.env} environment: {url}")
     print(f"🧪 Running test: {args.test}\n")
     
     # Run selected test
