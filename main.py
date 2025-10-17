@@ -143,7 +143,7 @@ def main():
         print(f"   🔗 URL: http://0.0.0.0:{args.port}")
     print(f"   🐍 Python: {sys.version.split()[0]}")
     # Dynamically list loaded tools
-    tool_names = ", ".join([f"{name}_tool" for name in tool_registry.template_loader.list_templates()])
+    tool_names = ", ".join([f"{name}" for name in tool_registry.template_loader.list_templates()])
     print(f"   🛠️  Tools: {tool_names}")
     print("")
 
