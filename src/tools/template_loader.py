@@ -1,16 +1,18 @@
 """
-Template Loader - Loads and manages LLM tool templates from JSON files.
+Template Loader - Loads and manages LLM tool templates with Pydantic validation.
 """
 
 import json
-import os
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, List
+
+from .models import LLMToolTemplate
 
 
 class TemplateLoader:
     """
-    Loads and manages LLM tool templates from JSON configuration files.
+    Loads and validates LLM tool templates using Pydantic.
+    Automatic type checking and validation on load!
     """
 
     def __init__(self, templates_dir: str = None):
@@ -27,38 +29,35 @@ class TemplateLoader:
             templates_dir = project_root / "configs" / "tools"
 
         self.templates_dir = Path(templates_dir)
-        self._templates = {}
+        self._templates: Dict[str, LLMToolTemplate] = {}
         self._load_all_templates()
 
     def _load_all_templates(self):
-        """Load all JSON templates from the templates directory."""
+        """Load all JSON templates with Pydantic validation."""
         if not self.templates_dir.exists():
             raise FileNotFoundError(f"Templates directory not found: {self.templates_dir}")
 
         for json_file in self.templates_dir.glob("*.json"):
             try:
                 with open(json_file, 'r', encoding='utf-8') as f:
-                    template = json.load(f)
+                    data = json.load(f)
 
-                tool_name = template.get("tool_name")
-                if not tool_name:
-                    print(f"Warning: Skipping {json_file.name} - missing 'tool_name'")
-                    continue
-
-                self._templates[tool_name] = template
+                # Pydantic validation - automatic type checking!
+                template = LLMToolTemplate.model_validate(data)
+                self._templates[template.tool_name] = template
 
             except Exception as e:
                 print(f"Warning: Failed to load template {json_file.name}: {e}")
 
-    def get_template(self, tool_name: str) -> Dict[str, Any]:
+    def get_template(self, tool_name: str) -> LLMToolTemplate:
         """
-        Get template by tool name.
+        Get validated template by tool name.
 
         Args:
             tool_name: Name of the tool
 
         Returns:
-            Template dictionary
+            LLMToolTemplate Pydantic model
 
         Raises:
             KeyError: If template not found
@@ -77,12 +76,12 @@ class TemplateLoader:
         """
         return list(self._templates.keys())
 
-    def get_all_templates(self) -> Dict[str, Dict[str, Any]]:
+    def get_all_templates(self) -> Dict[str, LLMToolTemplate]:
         """
         Get all templates.
 
         Returns:
-            Dictionary mapping tool names to templates
+            Dictionary mapping tool names to LLMToolTemplate models
         """
         return self._templates.copy()
 

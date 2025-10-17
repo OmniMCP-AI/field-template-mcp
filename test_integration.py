@@ -3,15 +3,16 @@ Integration test to verify the dynamic tool system works end-to-end.
 """
 
 import asyncio
-from src.tools import classify_by_llm, extract_by_llm, tag_by_llm
+from src.tools.dynamic_registry import get_tool_registry
 
 
 async def test_classify():
     """Test classify_by_llm through dynamic registry."""
-    result = await classify_by_llm(
-        input=["Apple releases iPhone", "Lakers win game"],
-        categories=["tech", "sports", "politics"]
-    )
+    registry = get_tool_registry()
+    result = await registry.call_tool("classify_by_llm", {
+        "input": ["Apple releases iPhone", "Lakers win game"],
+        "categories": ["tech", "sports", "politics"]
+    })
     print("✅ classify_by_llm test passed")
     print(f"   Result: {result}")
     return result
@@ -19,10 +20,11 @@ async def test_classify():
 
 async def test_extract():
     """Test extract_by_llm through dynamic registry."""
-    result = await extract_by_llm(
-        input=["Article by Wade on 2025-10-12"],
-        fields=["author", "date"]
-    )
+    registry = get_tool_registry()
+    result = await registry.call_tool("extract_by_llm", {
+        "input": ["Article by Wade on 2025-10-12"],
+        "fields": ["author", "date"]
+    })
     print("✅ extract_by_llm test passed")
     print(f"   Result: {result}")
     return result
@@ -30,10 +32,11 @@ async def test_extract():
 
 async def test_tag():
     """Test tag_by_llm through dynamic registry."""
-    result = await tag_by_llm(
-        input=["Python REST API"],
-        tags=["python", "javascript", "backend", "frontend"]
-    )
+    registry = get_tool_registry()
+    result = await registry.call_tool("tag_by_llm", {
+        "input": ["Python REST API"],
+        "tags": ["python", "javascript", "backend", "frontend"]
+    })
     print("✅ tag_by_llm test passed")
     print(f"   Result: {result}")
     return result

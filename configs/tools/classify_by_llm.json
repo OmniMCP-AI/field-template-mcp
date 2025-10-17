@@ -1,6 +1,7 @@
 {
   "tool_name": "classify_by_llm",
-  "description": "Classify each input into exactly ONE best-matching category from predefined options using LLM",
+  "operation_type": "single_choice",
+  "description": "Intelligently classifies text content into exactly one best-matching category using advanced LLM semantic understanding. Ideal for content categorization, routing workflows, sentiment analysis, and organizing data by topic, intent, or type. Supports batch processing of multiple items, custom classification instructions, and optional confidence scoring. Each input is assigned to the single most appropriate category from your predefined list.",
   "category": "classification",
   "version": "1.0.0",
   "model_config": {
@@ -16,30 +17,30 @@
   "parameters": {
     "input": {
       "type": "array",
-      "description": "List of items to classify",
+      "description": "Array of text items to classify. Each item can be a string or an object with 'id' and 'data' fields for batch processing. Supports articles, messages, documents, or any text content requiring categorization.",
       "required": true
     },
     "categories": {
       "type": "array",
       "items": {"type": "string"},
-      "description": "List of possible categories (mutually exclusive)",
+      "description": "List of mutually exclusive category names to choose from (minimum 2 required). Each input will be assigned to exactly one category. Use clear, descriptive category names like 'tech', 'sports', 'politics' rather than abbreviations.",
       "minItems": 2,
       "required": true
     },
     "prompt": {
       "type": "string",
-      "description": "Optional custom instructions for classification context",
+      "description": "Optional custom instructions to guide classification behavior. Use this to provide domain-specific context, clarify edge cases, or define what distinguishes categories. Example: 'Focus on the main topic, not secondary mentions' or 'Classify by emotional tone: positive, neutral, or negative'.",
       "required": false
     },
     "args": {
       "type": "object",
-      "description": "Optional configuration",
+      "description": "Optional advanced configuration settings to customize classification behavior, scoring, and model parameters.",
       "properties": {
-        "model": {"type": "string", "description": "Override default model"},
-        "temperature": {"type": "number", "description": "Override temperature"},
-        "include_scores": {"type": "boolean", "default": false},
-        "allow_none": {"type": "boolean", "default": false},
-        "fallback_category": {"type": "string", "default": null}
+        "model": {"type": "string", "description": "Override the default LLM model (gpt-4o-mini). Useful for complex classifications requiring more advanced reasoning."},
+        "temperature": {"type": "number", "description": "Control randomness in classification (0.0 = deterministic, higher = more creative). Default 0.0 for consistent results."},
+        "include_scores": {"type": "boolean", "default": false, "description": "When true, returns confidence scores (0-1) alongside categories, showing how certain the model is about each classification."},
+        "allow_none": {"type": "boolean", "default": false, "description": "When true, allows null results if no category fits well. Useful for quality control when exact matches are required."},
+        "fallback_category": {"type": "string", "default": null, "description": "Default category to use when classification is uncertain or when allow_none is false and no good match exists."}
       },
       "required": false
     }

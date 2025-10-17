@@ -1,6 +1,7 @@
 {
   "tool_name": "extract_by_llm",
-  "description": "Extract specific fields from unstructured text using LLM semantic understanding",
+  "operation_type": "extraction",
+  "description": "Extracts structured data fields from unstructured text using advanced LLM semantic understanding and natural language processing. Ideal for parsing documents, forms, emails, articles, or any text to extract specific information like names, dates, amounts, entities, or custom fields. Supports simple field lists or complex JSON schemas with nested objects and arrays. Returns structured JSON output with automatic type handling and null values for missing data.",
   "category": "extraction",
   "version": "1.0.0",
   "model_config": {
@@ -17,28 +18,28 @@
   "parameters": {
     "input": {
       "type": "array",
-      "description": "List of items to extract from",
+      "description": "Array of text items to extract data from. Each item can be a string or an object with 'id' and 'data' fields. Supports any unstructured text including documents, emails, forms, articles, chat transcripts, or web content.",
       "required": true
     },
     "fields": {
       "type": "array",
       "items": {"type": "string"},
-      "description": "List of field names to extract (required if response_format not provided)",
+      "description": "Simple list of field names to extract from the text (e.g., ['author', 'date', 'topic']). Use this for straightforward extractions where field names are self-explanatory. Required if 'response_format' is not provided. For complex nested structures, use 'response_format' instead.",
       "required": false
     },
     "response_format": {
       "type": "object",
-      "description": "JSON Schema for structured output (OpenAI-compatible)",
+      "description": "JSON Schema defining the exact structure of extracted data (OpenAI structured outputs compatible). Use this for complex extractions requiring specific types, nested objects, arrays, or validation rules. Must include 'type', 'properties', and optionally 'required' fields. Takes precedence over 'fields' parameter if both are provided.",
       "required": false
     },
     "args": {
       "type": "object",
-      "description": "Optional configuration",
+      "description": "Optional advanced configuration settings to customize extraction behavior, model parameters, and processing options.",
       "properties": {
-        "model": {"type": "string", "description": "Override default model"},
-        "temperature": {"type": "number", "description": "Override temperature"},
-        "max_tokens": {"type": "integer", "description": "Override max_tokens"},
-        "prompt": {"type": "string", "description": "Custom extraction instructions"}
+        "model": {"type": "string", "description": "Override the default LLM model (gpt-4o-mini). Use more advanced models for complex extractions, technical documents, or domain-specific content requiring deeper reasoning."},
+        "temperature": {"type": "number", "description": "Control randomness in extraction (0.0 = deterministic, higher = more interpretive). Default 0.0 recommended for factual data extraction to ensure consistency."},
+        "max_tokens": {"type": "integer", "description": "Maximum tokens for LLM response. Increase for documents with many fields or large extracted values. Default is 1000 tokens."},
+        "prompt": {"type": "string", "description": "Custom instructions to guide extraction behavior. Use this to clarify field meanings, specify formats (e.g., 'dates in ISO 8601'), handle edge cases, or provide domain context. Example: 'Extract monetary amounts in USD only' or 'For author, use full name format'."}
       },
       "required": false
     }

@@ -37,40 +37,73 @@ except Exception as e:
     logger.error(f"Failed to initialize OpenAI client: {e}")
 
 
-# Import tools - using compatibility wrappers that work with dynamic registry
-from src.tools import classify_by_llm, extract_by_llm, tag_by_llm
+# Import dynamic tool registry
+from src.tools.dynamic_registry import get_tool_registry
+import inspect
+from typing import Optional, Any
 
-# Register tools with FastMCP using the old-style decorators
-# These now use the dynamic registry under the hood
-@mcp.tool()
-async def classify_by_llm_tool(
-    input: list,
-    categories: list,
-    prompt: str = None,
-    args: dict = None
-) -> list:
-    """Classify each input into exactly ONE best-matching category from predefined options using LLM"""
-    return await classify_by_llm(input, categories, prompt, args)
+# Initialize dynamic tool registry and load all JSON templates
+tool_registry = get_tool_registry()
 
-@mcp.tool()
-async def tag_by_llm_tool(
-    input: list,
-    tags: list,
-    prompt: str = None,
-    args: dict = None
-) -> list:
-    """Apply multiple relevant tags from a predefined set to each input (non-mutually exclusive)"""
-    return await tag_by_llm(input, tags, prompt, args)
+# Dynamically register each tool from JSON configs
+for tool_name in tool_registry.template_loader.list_templates():
+    # Get the template to extract parameter info
+    template = tool_registry.template_loader.get_template(tool_name)
+    parameters = template.parameters
+    description = template.description
 
-@mcp.tool()
-async def extract_by_llm_tool(
-    input: list,
-    fields: list = None,
-    response_format: dict = None,
-    args: dict = None
-) -> list:
-    """Extract specific fields from unstructured text using LLM semantic understanding"""
-    return await extract_by_llm(input, fields, response_format, args)
+    # Build function code dynamically
+    # Create parameter list string
+    params_list = []
+    for param_name, param_def in parameters.items():
+        param_type = param_def.type
+        is_required = param_def.required
+
+        # Map JSON types to Python type hints
+        if param_type == "array":
+            type_hint = "list"
+        elif param_type == "object":
+            type_hint = "dict"
+        elif param_type == "string":
+            type_hint = "str"
+        elif param_type == "boolean":
+            type_hint = "bool"
+        elif param_type == "integer":
+            type_hint = "int"
+        else:
+            type_hint = "Any"
+
+        # Add Optional wrapper if not required
+        if not is_required:
+            params_list.append(f"{param_name}: Optional[{type_hint}] = None")
+        else:
+            params_list.append(f"{param_name}: {type_hint}")
+
+    params_str = ", ".join(params_list)
+
+    # Build the function dynamically
+    func_code = f'''
+async def {tool_name}_tool({params_str}) -> list:
+    """{description}"""
+    return await tool_registry.call_tool("{tool_name}", {{k: v for k, v in locals().items()}})
+'''
+
+    # Execute the function definition
+    exec_globals = {
+        'tool_registry': tool_registry,
+        'Optional': Optional,
+        'Any': Any,
+        'list': list,
+        'dict': dict,
+        'str': str,
+        'bool': bool,
+        'int': int
+    }
+    exec(func_code, exec_globals)
+
+    # Get the created function and register it
+    tool_func = exec_globals[f'{tool_name}_tool']
+    mcp.tool()(tool_func)
 
 
 def main():
@@ -107,7 +140,8 @@ def main():
         print(f"   🔗 URL: http://0.0.0.0:{args.port}")
     print(f"   🐍 Python: {sys.version.split()[0]}")
     # Dynamically list loaded tools
-    print(f"   🛠️  Tools: classify_by_llm_tool, tag_by_llm_tool, extract_by_llm_tool")
+    tool_names = ", ".join([f"{name}_tool" for name in tool_registry.template_loader.list_templates()])
+    print(f"   🛠️  Tools: {tool_names}")
     print("")
 
     try:

@@ -1,6 +1,7 @@
 {
   "tool_name": "tag_by_llm",
-  "description": "Apply multiple relevant tags from a predefined set to each input (non-mutually exclusive)",
+  "operation_type": "multi_label",
+  "description": "Applies multiple relevant tags to text content using intelligent LLM semantic analysis. Perfect for content organization, search indexing, filtering, and multi-dimensional categorization where items can belong to several categories simultaneously. Supports batch tagging, tag limits, relevance thresholds, and confidence scoring. Unlike single-category classification, this tool can assign zero to many tags per input based on content relevance.",
   "category": "tagging",
   "version": "1.0.0",
   "model_config": {
@@ -16,30 +17,30 @@
   "parameters": {
     "input": {
       "type": "array",
-      "description": "List of items to tag",
+      "description": "Array of text items to tag. Each item can be a string or an object with 'id' and 'data' fields. Supports articles, products, documents, user queries, or any content needing multi-label categorization.",
       "required": true
     },
     "tags": {
       "type": "array",
       "items": {"type": "string"},
-      "description": "List of possible tags (non-mutually exclusive)",
+      "description": "Complete list of available tag options to choose from (minimum 1 required). Tags are non-mutually exclusive - multiple tags can be applied to a single input. Use descriptive tag names like 'python', 'backend', 'api', 'machine-learning' for better semantic matching.",
       "minItems": 1,
       "required": true
     },
     "prompt": {
       "type": "string",
-      "description": "Optional custom instructions for tagging context",
+      "description": "Optional custom instructions to guide tagging behavior. Use this to specify tagging criteria, define tag meanings, or set relevance standards. Example: 'Only tag programming languages explicitly mentioned' or 'Focus on technical stack, not business domain'.",
       "required": false
     },
     "args": {
       "type": "object",
-      "description": "Optional configuration",
+      "description": "Optional advanced configuration settings to control tagging behavior, limits, thresholds, and scoring.",
       "properties": {
-        "model": {"type": "string", "description": "Override default model"},
-        "temperature": {"type": "number", "description": "Override temperature"},
-        "max_tags": {"type": "integer", "description": "Maximum tags per item"},
-        "min_relevance": {"type": "number", "description": "Minimum relevance threshold (0-1)"},
-        "include_scores": {"type": "boolean", "default": false}
+        "model": {"type": "string", "description": "Override the default LLM model (gpt-4o-mini). Use more advanced models for nuanced tagging decisions or domain-specific content."},
+        "temperature": {"type": "number", "description": "Control randomness in tag selection (0.0 = deterministic, higher = more exploratory). Default 0.0 for consistent, reproducible tagging."},
+        "max_tags": {"type": "integer", "description": "Maximum number of tags to apply per input. Useful for limiting results to only the most relevant tags. If not set, all relevant tags are applied."},
+        "min_relevance": {"type": "number", "description": "Minimum relevance threshold (0.0-1.0) for including a tag. Only tags scoring above this threshold will be applied. Higher values = stricter tag application."},
+        "include_scores": {"type": "boolean", "default": false, "description": "When true, returns confidence scores (0-1) for each applied tag, indicating how relevant the model considers each tag to be."}
       },
       "required": false
     }
