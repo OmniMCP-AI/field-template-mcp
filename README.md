@@ -79,28 +79,11 @@ cp env.example .env
 
 Edit the `.env` file to configure your API keys:
 
-```bash
-# OpenAI Configuration (Required for summarize_text tool)
-OPENAI_API_KEY=sk-your-openai-api-key-here
-
-# Optional: Custom base URL for OpenRouter or other OpenAI-compatible endpoints
-# For OpenRouter: https://openrouter.ai/api/v1
-OPENAI_BASE_URL=
-
-# Optional: Model to use for summarization (default: gpt-4o-mini)
-OPENAI_MODEL=gpt-4o-mini
-```
 
 ### OpenRouter Configuration
 
 If you want to use [OpenRouter](https://openrouter.ai/) for accessing multiple LLM providers:
 
-```bash
-OPENAI_API_KEY=sk-or-v1-your-openrouter-api-key-here
-OPENAI_BASE_URL=https://openrouter.ai/api/v1
-OPENAI_MODEL=openai/gpt-4o-mini
-# Or use other models like: anthropic/claude-3-opus, google/gemini-pro, etc.
-```
 
 ## Available Tools
 
@@ -160,8 +143,7 @@ python test/test_mcp_client.py --env=remote --url=https://your-server.com --test
 ### Test Requirements
 
 For the `summarize_text` test to work, you need to:
-1. Set `OPENAI_API_KEY` in your `.env` file
-2. Optionally configure `OPENAI_BASE_URL` for OpenRouter
+1. Set  key  in your `.env` file refer to env.example
 
 ## Development
 
