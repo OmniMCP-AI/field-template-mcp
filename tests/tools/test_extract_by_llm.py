@@ -3,7 +3,7 @@ Test cases for extract_by_llm tool.
 
 Simplified single input/output format:
 - Input: single string (not array)
-- Fields: single field name (not array, not comma-separated)
+- item_to_extract: single field name (not array, not comma-separated)
 - Output: plain text value (not JSON)
 """
 
@@ -27,7 +27,7 @@ class TestExtractByLLMBasic:
         """Test extracting author field."""
         result = await extract_by_llm(
             input="Article by Wade on 2025-10-12 about AI",
-            fields="author"
+            item_to_extract="author"
         )
 
         # Result should be a plain string
@@ -39,7 +39,7 @@ class TestExtractByLLMBasic:
         """Test extracting date field."""
         result = await extract_by_llm(
             input="Article by Wade on 2025-10-12 about AI",
-            fields="date"
+            item_to_extract="date"
         )
 
         assert isinstance(result, str)
@@ -50,7 +50,7 @@ class TestExtractByLLMBasic:
         """Test extracting topic field."""
         result = await extract_by_llm(
             input="Blog post about machine learning published yesterday",
-            fields="topic"
+            item_to_extract="topic"
         )
 
         assert isinstance(result, str)
@@ -65,7 +65,7 @@ class TestExtractByLLMWithArgs:
         """Test custom extraction instructions."""
         result = await extract_by_llm(
             input="Article by John Doe with contributions from Jane Smith and Bob Wilson",
-            fields="primary_author",
+            item_to_extract="primary_author",
             args={"prompt": "Extract only the primary author (first mentioned), not co-authors"}
         )
 
@@ -78,12 +78,12 @@ class TestExtractByLLMErrorHandling:
     """Tests for error handling and edge cases."""
 
     @pytest.mark.asyncio
-    async def test_missing_fields_error(self, extract_by_llm):
-        """Test that missing fields parameter raises error."""
+    async def test_missing_items_error(self, extract_by_llm):
+        """Test that missing items parameter raises error."""
         with pytest.raises((TypeError, ValueError)):
             await extract_by_llm(
                 input="Some text"
-                # Missing fields parameter
+                # Missing items parameter
             )
 
     @pytest.mark.asyncio
@@ -91,7 +91,7 @@ class TestExtractByLLMErrorHandling:
         """Test extraction with unicode content."""
         result = await extract_by_llm(
             input="文章作者：张三，日期：2025-10-12",
-            fields="author"
+            item_to_extract="author"
         )
 
         assert isinstance(result, str)

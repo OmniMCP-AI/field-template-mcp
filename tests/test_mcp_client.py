@@ -57,10 +57,12 @@ async def test_list_tools(url):
             print(f"✅ Found {len(tools.tools)} available tools:\n")
             for i, tool in enumerate(tools.tools, 1):
                 print(f"   {i}. {tool.name}")
+                print(f"      Input Schema: {tool.inputSchema}")
                 print(f"      Description: {tool.description[:150]}...")
+                print(f"      Output Schema: {tool.outputSchema}")
                 print()
 
-            print("✅ Tool discovery test completed!\n")
+            print("✅ Tool discovery test completed!\n")  
 
 
 async def test_classify(url):
@@ -75,7 +77,7 @@ async def test_classify(url):
             # Test 1: Classify news article
             print("\n📰 Test 1: Classifying news article")
             classify_res = await session.call_tool(
-                "classify_tool",
+                "classify",
                 {
                     "input": "Apple releases new iPhone with AI features",
                     "categories": "tech,sports,politics"
@@ -91,7 +93,7 @@ async def test_classify(url):
             # Test 2: Classify with custom prompt
             print("\n📝 Test 2: Classifying with custom prompt")
             classify_res2 = await session.call_tool(
-                "classify_tool",
+                "classify",
                 {
                     "input": "It's a sunny day",
                     "categories": "good_weather,bad_weather",
@@ -120,7 +122,7 @@ async def test_tag(url):
             # Test 1: Tag programming project
             print("\n💻 Test 1: Tagging programming project")
             tag_res = await session.call_tool(
-                "tag_tool",
+                "tag",
                 {
                     "input": "Python REST API with FastAPI",
                     "tags": "python,javascript,typescript,backend,frontend,fullstack"
@@ -136,7 +138,7 @@ async def test_tag(url):
             # Test 2: Tag with max_tags limit
             print("\n🏷️  Test 2: Tagging with max_tags=2")
             tag_res2 = await session.call_tool(
-                "tag_tool",
+                "tag",
                 {
                     "input": "Machine learning project with Python, TensorFlow, Docker, and REST API",
                     "tags": "python,machine-learning,docker,api,tensorflow",
@@ -162,14 +164,14 @@ async def test_extract(url):
         async with ClientSession(read, write) as session:
             await session.initialize()
 
-            # Test 1: Extract fields from text
-            print("\n📄 Test 1: Extracting fields from text")
+            # Test 1: Extract item_to_extract from text
+            print("\n📄 Test 1: Extracting item_to_extract from text")
             extract_res = await session.call_tool(
-                "extract_tool",
+                "extract",
                 {
                     "input": "Article by John Smith published on 2025-01-15 about AI",
-                    # "fields": "author,date,topic"
-                     "fields": "date"
+                    # "item_to_extract": "author,date,topic"
+                     "item_to_extract": "date"
                 }
             )
 
@@ -182,10 +184,10 @@ async def test_extract(url):
             # Test 2: Extract another example
             print("\n🔍 Test 2: Extracting from blog post")
             extract_res2 = await session.call_tool(
-                "extract_tool",
+                "extract",
                 {
                     "input": "Blog post by Jane Doe from 2025-02-20 covering machine learning",
-                    "fields": "author" # ,date,topic
+                    "item_to_extract": "author" # ,date,topic
                 }
             )
 

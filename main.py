@@ -104,9 +104,31 @@ async def {tool_name}({params_str}):
     }
     exec(func_code, exec_globals)
 
-    # Get the created function and register it
+    # Get the created function and register it with output schema
     tool_func = exec_globals[f'{tool_name}']
-    mcp.tool()(tool_func)
+
+    # Get output schema from template
+    output_format = template.output_format
+    if output_format:
+        # MCP/FastMCP requires object type schemas, so wrap primitive types
+        if output_format.get("type") != "object":
+            # Wrap primitive type in an object for MCP compatibility
+            # But keep description to indicate the actual return type
+            output_schema = {
+                "type": "object",
+                "properties": {
+                    "result": output_format
+                },
+                "required": ["result"],
+                "description": f"Returns: {output_format.get('description', output_format.get('type'))}"
+            }
+        else:
+            output_schema = {
+                **output_format
+            }
+        mcp.tool(output_schema=output_schema)(tool_func)
+    else:
+        mcp.tool()(tool_func)
 
 
 def main():

@@ -78,6 +78,13 @@ class LLMToolExecutor:
 
         # For single string input, return just the result value
         if single_input and len(results) > 0:
-            return results[0].get("result")
+            result = results[0].get("result")
+
+            # If output_format exists, wrap in object for MCP schema compliance
+            if self.template.output_format:
+                # Use 'result' as the key for consistency
+                return {"result": result}
+
+            return result
 
         return results

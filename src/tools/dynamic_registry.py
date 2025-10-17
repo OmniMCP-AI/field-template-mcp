@@ -99,12 +99,9 @@ class DynamicToolRegistry:
         """
         output_format = template.get("output_format")
 
-        # If output_format is defined, use it
+        # If output_format is defined, use it (without $schema field for MCP)
         if output_format:
-            return {
-                "$schema": "http://json-schema.org/draft-07/schema#",
-                **output_format
-            }
+            return {**output_format}
 
         # Default: no validation
         return None

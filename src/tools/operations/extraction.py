@@ -1,6 +1,6 @@
 """
 Extraction operation strategy.
-Extracts fields from text (simple fields or structured schema).
+Extracts item_to_extract from text (simple item_to_extract or structured schema).
 """
 
 import json
@@ -28,19 +28,19 @@ class ExtractionOperation(OperationStrategy):
         """Execute field extraction."""
 
         # Get extraction parameters
-        fields = params.get("fields")
+        item_to_extract = params.get("item_to_extract")
         schema = params.get("response_format")
 
         # For simple string field (not comma-separated), just use it as-is
-        if isinstance(fields, str):
+        if isinstance(item_to_extract, str):
             # Single field extraction - no comma separation needed
-            field_name = fields.strip()
+            field_name = item_to_extract.strip()
         else:
             field_name = None
 
-        # Must have either fields or schema
+        # Must have either item_to_extract or schema
         if not field_name and not schema:
-            raise ValueError("Either 'fields' or 'response_format' parameter is required")
+            raise ValueError("Either 'item_to_extract' or 'response_format' parameter is required")
 
         # Determine if using structured output
         use_structured = template.prompt_templates.structured_system is not None and schema
@@ -81,7 +81,7 @@ class ExtractionOperation(OperationStrategy):
 
         # Format user prompt with field name and data
         user_prompt = template.prompt_templates.user.format(
-            fields=field_name, text=item["data"]
+            item_to_extract=field_name, text=item["data"]
         )
 
         # Add custom prompt if provided
@@ -106,22 +106,22 @@ class ExtractionOperation(OperationStrategy):
         # Return the plain text value (strip whitespace)
         return response.strip()
 
-    async def _extract_fields(
+    async def _extract_items(
         self,
         llm_client: Any,
         template: LLMToolTemplate,
         item: Dict[str, Any],
-        fields: List[str],
+        item_to_extract: List[str],
         params: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Extract simple fields from text."""
+        """Extract simple item_to_extract from text."""
 
         # Build prompts from template
         system_prompt = template.prompt_templates.system
 
-        # Format user prompt with fields and data
+        # Format user prompt with item_to_extract and data
         user_prompt = template.prompt_templates.user.format(
-            fields=", ".join(fields), text=item["data"]
+            item_to_extract=", ".join(item_to_extract), text=item["data"]
         )
 
         # Add custom prompt if provided
@@ -149,7 +149,7 @@ class ExtractionOperation(OperationStrategy):
             result = json.loads(json_str)
         except (json.JSONDecodeError, ValueError):
             # If not valid JSON, try to extract from text
-            result = self._parse_text_extraction(response, fields)
+            result = self._parse_text_extraction(response, item_to_extract)
 
         return result
 
@@ -197,13 +197,13 @@ class ExtractionOperation(OperationStrategy):
 
         return result
 
-    def _parse_text_extraction(self, response: str, fields: List[str]) -> Dict[str, Any]:
+    def _parse_text_extraction(self, response: str, item_to_extract: List[str]) -> Dict[str, Any]:
         """Fallback: Parse extraction from text if not JSON."""
         result = {}
         lines = response.strip().split("\n")
 
         for line in lines:
-            for field in fields:
+            for field in item_to_extract:
                 # Try to find "field: value" pattern
                 if line.lower().startswith(field.lower() + ":"):
                     value = line.split(":", 1)[1].strip()
