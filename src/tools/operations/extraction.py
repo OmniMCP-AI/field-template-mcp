@@ -79,10 +79,28 @@ class ExtractionOperation(OperationStrategy):
         # Build prompts from template
         system_prompt = template.prompt_templates.system
 
-        # Format user prompt with field name and data
-        user_prompt = template.prompt_templates.user.format(
-            item_to_extract=field_name, text=item["data"]
-        )
+        # Prepare format variables - include all params plus standard ones
+        format_vars = {
+            "item_to_extract": field_name,
+            "text": item["data"],
+            "input": item["data"],  # Support both 'text' and 'input'
+        }
+
+        # Add all other parameters from params (like entity_to_extract, date, etc.)
+        for key, value in params.items():
+            if key not in ["args", "prompt", "response_format"] and value is not None:
+                # Format the value appropriately (e.g., "Date: 2024" or empty string if not provided)
+                if key == "date" and value:
+                    format_vars[key] = f"Date: {value}\n\n"
+                else:
+                    format_vars[key] = value
+
+        # Handle optional date field - if not provided, use empty string
+        if "date" not in format_vars or not format_vars.get("date"):
+            format_vars["date"] = ""
+
+        # Format user prompt with all variables
+        user_prompt = template.prompt_templates.user.format(**format_vars)
 
         # Add custom prompt if provided
         if params.get("prompt"):

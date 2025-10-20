@@ -7,11 +7,12 @@ Test Functions:
 - test_classify: Test the classify tool
 - test_tag: Test the tag tool
 - test_extract: Test the extract tool
+- test_extract_metric_by_entity: Test the extract_metric_by_entity tool
 
 Usage:
     # Run all tests (local)
     python tests/test_mcp_client.py --env=local --test=all
-    
+
     # Run tests on prod environment
     python tests/test_mcp_client.py --env=prod --test=all
 
@@ -20,7 +21,8 @@ Usage:
     python tests/test_mcp_client.py --env=local --test=classify
     python tests/test_mcp_client.py --env=prod --test=tag
     python tests/test_mcp_client.py --env=local --test=extract
-    
+    python tests/test_mcp_client.py --env=local --test=extract_em
+
     # Run with custom URL
     python tests/test_mcp_client.py --env=remote --url=https://your-server.com/sse --test=all
 
@@ -200,22 +202,128 @@ async def test_extract(url):
             print("\n✅ extract tool test completed!")
 
 
+async def test_extract_metric_by_entity(url):
+    """Test the extract_metric_by_entity tool"""
+    print("🚀 Testing extract_metric_by_entity Tool")
+    print("=" * 60)
+
+    # Read the Tesla article
+    test_article_path = os.path.join(os.path.dirname(__file__), "test-tesla-article.txt")
+    with open(test_article_path, 'r') as f:
+        tesla_article = f.read()
+
+    async with streamable_http.streamablehttp_client(url) as (read, write, _):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+
+            # Test 1: Extract EVs sold for Tesla
+            print("\n📊 Test 1: Extract EVs sold for Tesla")
+            result1 = await session.call_tool(
+                "extract_metric_by_entity",
+                {
+                    "input": tesla_article,
+                    "entity_to_extract": "Tesla",
+                    "item_to_extract": "EVs sold globally"
+                }
+            )
+
+            if result1.isError:
+                print(f"❌ Error: {result1.content[0].text if result1.content else 'Unknown error'}")
+            else:
+                result_text = result1.content[0].text if result1.content else None
+                print(f"✅ Result: {result_text}")
+
+            # Test 2: Extract renewable energy usage
+            print("\n🔋 Test 2: Extract renewable energy usage for Tesla")
+            result2 = await session.call_tool(
+                "extract_metric_by_entity",
+                {
+                    "input": tesla_article,
+                    "entity_to_extract": "Tesla",
+                    "item_to_extract": "renewable energy usage"
+                }
+            )
+
+            if result2.isError:
+                print(f"❌ Error: {result2.content[0].text if result2.content else 'Unknown error'}")
+            else:
+                result_text = result2.content[0].text if result2.content else None
+                print(f"✅ Result: {result_text}")
+
+            # Test 3: Extract battery recycling growth with date
+            print("\n♻️  Test 3: Extract battery recycling growth for Tesla in 2024")
+            result3 = await session.call_tool(
+                "extract_metric_by_entity",
+                {
+                    "input": tesla_article,
+                    "entity_to_extract": "Tesla",
+                    "item_to_extract": "battery recycling throughput growth",
+                    "date": "2024"
+                }
+            )
+
+            if result3.isError:
+                print(f"❌ Error: {result3.content[0].text if result3.content else 'Unknown error'}")
+            else:
+                result_text = result3.content[0].text if result3.content else None
+                print(f"✅ Result: {result_text}")
+
+            # Test 4: Extract water usage per vehicle
+            print("\n💧 Test 4: Extract water usage per vehicle for Tesla")
+            result4 = await session.call_tool(
+                "extract_metric_by_entity",
+                {
+                    "input": tesla_article,
+                    "entity_to_extract": "Tesla",
+                    "item_to_extract": "water use per vehicle"
+                }
+            )
+
+            if result4.isError:
+                print(f"❌ Error: {result4.content[0].text if result4.content else 'Unknown error'}")
+            else:
+                result_text = result4.content[0].text if result4.content else None
+                print(f"✅ Result: {result_text}")
+
+            # Test 5: Extract CO2 emissions avoided
+            print("\n🌍 Test 5: Extract CO2 emissions avoided by Tesla customers")
+            result5 = await session.call_tool(
+                "extract_metric_by_entity",
+                {
+                    "input": tesla_article,
+                    "entity_to_extract": "Tesla",
+                    "item_to_extract": "CO2 emissions avoided"
+                }
+            )
+
+            if result5.isError:
+                print(f"❌ Error: {result5.content[0].text if result5.content else 'Unknown error'}")
+            else:
+                result_text = result5.content[0].text if result5.content else None
+                print(f"✅ Result: {result_text}")
+
+            print("\n✅ extract_metric_by_entity tool test completed!")
+
+
 async def test_all(url):
     """Run all tests"""
     print("🧪 Running ALL Tests")
     print("=" * 60)
-    
+
     await test_list_tools(url)
     print("\n" + "=" * 60 + "\n")
-    
+
     await test_classify(url)
     print("\n" + "=" * 60 + "\n")
-    
+
     await test_tag(url)
     print("\n" + "=" * 60 + "\n")
-    
+
     await test_extract(url)
-    
+    print("\n" + "=" * 60 + "\n")
+
+    await test_extract_metric_by_entity(url)
+
     print("\n✅ All tests completed!")
 
 
@@ -235,7 +343,7 @@ def main():
     )
     parser.add_argument(
         "--test",
-        choices=["all", "list_tools", "classify", "tag", "extract"],
+        choices=["all", "list_tools", "classify", "tag", "extract", "extract_em"],
         default="all",
         help="Which test to run",
     )
@@ -268,6 +376,8 @@ def main():
         asyncio.run(test_tag(url))
     elif args.test == "extract":
         asyncio.run(test_extract(url))
+    elif args.test == "extract_em":
+        asyncio.run(test_extract_metric_by_entity(url))
 
 
 if __name__ == "__main__":
