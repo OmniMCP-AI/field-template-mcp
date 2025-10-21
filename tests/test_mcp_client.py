@@ -7,7 +7,7 @@ Test Functions:
 - test_classify: Test the classify tool
 - test_tag: Test the tag tool
 - test_extract: Test the extract tool
-- test_extract_metric_by_entity: Test the extract_metric_by_entity tool
+- test_extract_items_by_entity: Test the extract_items_by_entity tool
 
 Usage:
     # Run all tests (local)
@@ -21,7 +21,7 @@ Usage:
     python tests/test_mcp_client.py --env=local --test=classify
     python tests/test_mcp_client.py --env=prod --test=tag
     python tests/test_mcp_client.py --env=local --test=extract
-    python tests/test_mcp_client.py --env=local --test=extract_em
+    python tests/test_mcp_client.py --env=local --test=extract_items
 
     # Run with custom URL
     python tests/test_mcp_client.py --env=remote --url=https://your-server.com/sse --test=all
@@ -202,9 +202,9 @@ async def test_extract(url):
             print("\n✅ extract tool test completed!")
 
 
-async def test_extract_metric_by_entity(url):
-    """Test the extract_metric_by_entity tool"""
-    print("🚀 Testing extract_metric_by_entity Tool")
+async def test_extract_items_by_entity(url):
+    """Test the extract_items_by_entity tool"""
+    print("🚀 Testing extract_items_by_entity Tool")
     print("=" * 60)
 
     # Read the Tesla article
@@ -216,14 +216,14 @@ async def test_extract_metric_by_entity(url):
         async with ClientSession(read, write) as session:
             await session.initialize()
 
-            # Test 1: Extract EVs sold for Tesla
-            print("\n📊 Test 1: Extract EVs sold for Tesla")
+            # Test 1: Extract single item for Tesla
+            print("\n📊 Test 1: Extract single item (EVs sold) for Tesla")
             result1 = await session.call_tool(
-                "extract_metric_by_entity",
+                "extract_items_by_entity",
                 {
                     "input": tesla_article,
                     "entity_to_extract": "Tesla",
-                    "item_to_extract": "EVs sold globally"
+                    "items_to_extract": "EVs sold globally"
                 }
             )
 
@@ -233,14 +233,14 @@ async def test_extract_metric_by_entity(url):
                 result_text = result1.content[0].text if result1.content else None
                 print(f"✅ Result: {result_text}")
 
-            # Test 2: Extract renewable energy usage
-            print("\n🔋 Test 2: Extract renewable energy usage for Tesla")
+            # Test 2: Extract multiple items with comma-separated string
+            print("\n🔋 Test 2: Extract multiple items (comma-separated) for Tesla")
             result2 = await session.call_tool(
-                "extract_metric_by_entity",
+                "extract_items_by_entity",
                 {
                     "input": tesla_article,
                     "entity_to_extract": "Tesla",
-                    "item_to_extract": "renewable energy usage"
+                    "items_to_extract": "EVs sold globally,renewable energy usage"
                 }
             )
 
@@ -250,14 +250,14 @@ async def test_extract_metric_by_entity(url):
                 result_text = result2.content[0].text if result2.content else None
                 print(f"✅ Result: {result_text}")
 
-            # Test 3: Extract battery recycling growth with date
-            print("\n♻️  Test 3: Extract battery recycling growth for Tesla in 2024")
+            # Test 3: Extract with date filter
+            print("\n♻️  Test 3: Extract with date filter for Tesla")
             result3 = await session.call_tool(
-                "extract_metric_by_entity",
+                "extract_items_by_entity",
                 {
                     "input": tesla_article,
                     "entity_to_extract": "Tesla",
-                    "item_to_extract": "battery recycling throughput growth",
+                    "items_to_extract": "battery recycling throughput growth",
                     "date": "2024"
                 }
             )
@@ -268,14 +268,14 @@ async def test_extract_metric_by_entity(url):
                 result_text = result3.content[0].text if result3.content else None
                 print(f"✅ Result: {result_text}")
 
-            # Test 4: Extract water usage per vehicle
-            print("\n💧 Test 4: Extract water usage per vehicle for Tesla")
+            # Test 4: Extract multiple items including water usage and CO2
+            print("\n💧 Test 4: Extract water usage and CO2 emissions for Tesla")
             result4 = await session.call_tool(
-                "extract_metric_by_entity",
+                "extract_items_by_entity",
                 {
                     "input": tesla_article,
                     "entity_to_extract": "Tesla",
-                    "item_to_extract": "water use per vehicle"
+                    "items_to_extract": "water use per vehicle,CO2 emissions avoided"
                 }
             )
 
@@ -285,24 +285,7 @@ async def test_extract_metric_by_entity(url):
                 result_text = result4.content[0].text if result4.content else None
                 print(f"✅ Result: {result_text}")
 
-            # Test 5: Extract CO2 emissions avoided
-            print("\n🌍 Test 5: Extract CO2 emissions avoided by Tesla customers")
-            result5 = await session.call_tool(
-                "extract_metric_by_entity",
-                {
-                    "input": tesla_article,
-                    "entity_to_extract": "Tesla",
-                    "item_to_extract": "CO2 emissions avoided"
-                }
-            )
-
-            if result5.isError:
-                print(f"❌ Error: {result5.content[0].text if result5.content else 'Unknown error'}")
-            else:
-                result_text = result5.content[0].text if result5.content else None
-                print(f"✅ Result: {result_text}")
-
-            print("\n✅ extract_metric_by_entity tool test completed!")
+            print("\n✅ extract_items_by_entity tool test completed!")
 
 
 async def test_all(url):
@@ -322,7 +305,7 @@ async def test_all(url):
     await test_extract(url)
     print("\n" + "=" * 60 + "\n")
 
-    await test_extract_metric_by_entity(url)
+    await test_extract_items_by_entity(url)
 
     print("\n✅ All tests completed!")
 
@@ -343,7 +326,7 @@ def main():
     )
     parser.add_argument(
         "--test",
-        choices=["all", "list_tools", "classify", "tag", "extract", "extract_em"],
+        choices=["all", "list_tools", "classify", "tag", "extract", "extract_items"],
         default="all",
         help="Which test to run",
     )
@@ -376,8 +359,8 @@ def main():
         asyncio.run(test_tag(url))
     elif args.test == "extract":
         asyncio.run(test_extract(url))
-    elif args.test == "extract_em":
-        asyncio.run(test_extract_metric_by_entity(url))
+    elif args.test == "extract_items":
+        asyncio.run(test_extract_items_by_entity(url))
 
 
 if __name__ == "__main__":

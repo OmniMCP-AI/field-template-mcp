@@ -80,8 +80,13 @@ class LLMToolExecutor:
         if single_input and len(results) > 0:
             result = results[0].get("result")
 
-            # If output_format is a string type, MCP requires dict wrapping
+            # MCP requires dict wrapping for non-dict types
+            # If output_format is a string type, wrap in dict
             if self.template.output_format and self.template.output_format.get("type") == "string":
+                return {"result": result}
+
+            # If output_format is an array type, wrap in dict
+            if self.template.output_format and self.template.output_format.get("type") == "array":
                 return {"result": result}
 
             return result

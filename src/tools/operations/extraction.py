@@ -29,8 +29,30 @@ class ExtractionOperation(OperationStrategy):
 
         # Get extraction parameters
         item_to_extract = params.get("item_to_extract")
+        items_to_extract = params.get("items_to_extract")
         schema = params.get("response_format")
 
+        # Handle items_to_extract (new plural version)
+        if items_to_extract is not None:
+            if isinstance(items_to_extract, str):
+                # Split comma-separated string into list
+                items_list = [item.strip() for item in items_to_extract.split(",")]
+            elif isinstance(items_to_extract, list):
+                # Already a list
+                items_list = items_to_extract
+            else:
+                raise ValueError("items_to_extract must be a string or list")
+
+            # Extract multiple items and return as list
+            results = []
+            for item in normalized_input:
+                result = await self._extract_items_list(
+                    llm_client, template, item, items_list, params
+                )
+                results.append({"id": item["id"], "result": result})
+            return results
+
+        # Handle item_to_extract (original singular version)
         # For simple string field (not comma-separated), just use it as-is
         if isinstance(item_to_extract, str):
             # Single field extraction - no comma separation needed
@@ -40,7 +62,7 @@ class ExtractionOperation(OperationStrategy):
 
         # Must have either item_to_extract or schema
         if not field_name and not schema:
-            raise ValueError("Either 'item_to_extract' or 'response_format' parameter is required")
+            raise ValueError("Either 'item_to_extract', 'items_to_extract', or 'response_format' parameter is required")
 
         # Determine if using structured output
         use_structured = template.prompt_templates.structured_system is not None and schema
@@ -123,6 +145,74 @@ class ExtractionOperation(OperationStrategy):
 
         # Return the plain text value (strip whitespace)
         return response.strip()
+
+    async def _extract_items_list(
+        self,
+        llm_client: Any,
+        template: LLMToolTemplate,
+        item: Dict[str, Any],
+        items_to_extract: List[str],
+        params: Dict[str, Any]
+    ) -> List[str]:
+        """Extract multiple items and return as list of strings."""
+
+        # Build prompts from template
+        system_prompt = template.prompt_templates.system
+
+        # Prepare format variables - include all params plus standard ones
+        format_vars = {
+            "items_to_extract": ", ".join(items_to_extract),
+            "text": item["data"],
+            "input": item["data"],  # Support both 'text' and 'input'
+        }
+
+        # Add all other parameters from params (like entity_to_extract, date, etc.)
+        for key, value in params.items():
+            if key not in ["args", "prompt", "response_format", "items_to_extract"] and value is not None:
+                # Format the value appropriately (e.g., "Date: 2024" or empty string if not provided)
+                if key == "date" and value:
+                    format_vars[key] = f"Date: {value}\n\n"
+                else:
+                    format_vars[key] = value
+
+        # Handle optional date field - if not provided, use empty string
+        if "date" not in format_vars or not format_vars.get("date"):
+            format_vars["date"] = ""
+
+        # Format user prompt with all variables
+        user_prompt = template.prompt_templates.user.format(**format_vars)
+
+        # Add custom prompt if provided
+        if params.get("prompt"):
+            system_prompt += f"\n\n{params['prompt']}"
+
+        # Get model config
+        args = params.get("args") or {}
+        model = args.get("model", template.llm_config.model)
+        temperature = args.get("temperature", template.llm_config.temperature)
+
+        # Call LLM
+        response = await llm_client.chat(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            model=model,
+            temperature=temperature
+        )
+
+        # Parse JSON array response
+        try:
+            json_str = extract_json_str(response)
+            result = json.loads(json_str)
+
+            # Ensure result is a list
+            if not isinstance(result, list):
+                raise ValueError("Expected list response from LLM")
+
+            return result
+        except (json.JSONDecodeError, ValueError) as e:
+            raise ValueError(f"LLM did not return valid JSON array: {response}") from e
 
     async def _extract_items(
         self,

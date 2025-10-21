@@ -1,7 +1,7 @@
 {
-   "tool_name": "extract_metric_by_entity",
+   "tool_name": "extract_items_by_entity",
    "operation_type": "extraction",
-   "description": "Extracts specific metric or property values for a given entity from unstructured text using advanced LLM semantic understanding. Ideal for extracting financial metrics (EPS, revenue, price targets), entity properties, or time-specific data from documents, reports, articles, or any text content. Returns only the extracted value as plain text.",
+   "description": "Extracts specific metric or property values for a given entity from unstructured text using advanced LLM semantic understanding. Ideal for extracting financial metrics (EPS, revenue, price targets), entity properties, or time-specific data from documents, reports, articles, or any text content. Returns extracted values as a list of strings.",
    "category": "extraction",
    "version": "1.0.0",
    "model_config": {
@@ -11,8 +11,8 @@
      "max_tokens": 1000
    },
    "prompt_templates": {
-     "system": "You are a data extraction expert specializing in extracting specific metrics and properties for entities from unstructured text.\n\nRules:\n- Extract ONLY the value of the requested property/metric for the specified entity\n- Return ONLY the extracted value as plain text, nothing else\n- Do NOT return JSON, do NOT include the field name or entity name\n- If a date/time period is specified, extract the value for that specific period only\n- If the property/metric is not found for the entity, return null\n- Be accurate and precise in extraction\n- Handle variations in entity naming (e.g., 'Apple' vs 'AAPL')\n\nExample:\nEntity: AAPL\nProperty: EPS\nDate: 2024 Q2\nText: Apple (AAPL) reported Q2 2024 EPS of $1.52, beating estimates.\nExtracted value: $1.52",
-     "user": "Entity: {entity_to_extract}\n\nProperty/Metric to extract: {item_to_extract}\n\n{date}Text:\n{input}\n\nExtracted value:"
+     "system": "You are a data extraction expert specializing in extracting specific metrics and properties for entities from unstructured text.\n\nRules:\n- Extract ONLY the values of the requested properties/metrics for the specified entity\n- Return ONLY the extracted values as a JSON array of strings, nothing else\n- Do NOT include the field names or entity name in the output\n- If a date/time period is specified, extract the value for that specific period only\n- If a property/metric is not found for the entity, use null for that value\n- Be accurate and precise in extraction\n- Handle variations in entity naming (e.g., 'Apple' vs 'AAPL')\n- The order of values in the output array must match the order of requested properties\n\nExample:\nEntity: AAPL\nProperties: EPS, Price Targets - High\nDate: 2024 Q2\nText: Apple (AAPL) reported Q2 2024 EPS of $1.52, beating estimates. Analysts set price targets from $180 to $220.\nExtracted values: [\"$1.52\", \"$220\"]",
+     "user": "Entity: {entity_to_extract}\n\nProperties/Metrics to extract: {items_to_extract}\n\n{date}Text:\n{input}\n\nExtracted values:"
    },
    "parameters": {
      "input": {
@@ -25,9 +25,9 @@
        "description": "The entity identifier to extract the metric from (e.g., stock symbol 'AAPL', 'TSLA', company name, product name, or any identifiable entity).",
        "required": true
      },
-     "item_to_extract": {
+     "items_to_extract": {
        "type": "string",
-       "description": "The property or metric name to extract for the entity (e.g., 'EPS', 'revenue', 'Price Targets - High', 'Analyst Estimates - Revenue', 'Revenue Impact').",
+       "description": "Comma-separated list or single property/metric name to extract for the entity (e.g., 'EPS,revenue' or 'Price Targets - High'). You can also pass a JSON array of strings.",
        "required": true
      },
      "date": {
@@ -48,8 +48,11 @@
      }
    },
    "output_format": {
-     "type": "string",
-     "description": "The extracted metric/property value as plain text (e.g., '$1.52', '245%', '$125.50', 'High risk')"
+     "type": "array",
+     "items": {
+       "type": "string"
+     },
+     "description": "Returns {result: [\"value1\", \"value2\", ...]} - array of extracted metric/property values as strings"
    },
    "examples": [
      {
@@ -57,46 +60,46 @@
        "input": {
          "input": "Apple (AAPL) reported strong Q3 results with EPS of $1.52, while Tesla (TSLA) posted EPS of $0.85. AAPL price targets range from $180 (low) to $220 (high).",
          "entity_to_extract": "AAPL",
-         "item_to_extract": "EPS"
+         "items_to_extract": "EPS"
        },
-       "output": "$1.52"
+       "output": ["$1.52"]
      },
      {
-       "description": "Extract price target high for AAPL",
+       "description": "Extract multiple metrics for AAPL",
        "input": {
          "input": "Apple (AAPL) reported strong Q3 results with EPS of $1.52, while Tesla (TSLA) posted EPS of $0.85. AAPL price targets range from $180 (low) to $220 (high).",
          "entity_to_extract": "AAPL",
-         "item_to_extract": "Price Targets - High"
+         "items_to_extract": "EPS,Price Targets - High"
        },
-       "output": "$220"
+       "output": ["$1.52", "$220"]
      },
      {
        "description": "Extract revenue impact for TSLA",
        "input": {
          "input": "Tesla's new model launch is expected to have a revenue impact of $2.5B in 2025, with Q3 specifically contributing $800M. Analysts estimate TSLA's total 2025 revenue at $95B.",
          "entity_to_extract": "TSLA",
-         "item_to_extract": "Revenue Impact"
+         "items_to_extract": "Revenue Impact"
        },
-       "output": "$2.5B"
+       "output": ["$2.5B"]
      },
      {
        "description": "Extract revenue impact for TSLA with specific date",
        "input": {
          "input": "Tesla's new model launch is expected to have a revenue impact of $2.5B in 2025, with Q3 specifically contributing $800M. Analysts estimate TSLA's total 2025 revenue at $95B.",
          "entity_to_extract": "TSLA",
-         "item_to_extract": "Revenue Impact",
+         "items_to_extract": "Revenue Impact",
          "date": "2025-Q3"
        },
-       "output": "$800M"
+       "output": ["$800M"]
      },
      {
-       "description": "Extract analyst revenue estimates for TSLA",
+       "description": "Extract multiple metrics for TSLA",
        "input": {
          "input": "Tesla's new model launch is expected to have a revenue impact of $2.5B in 2025, with Q3 specifically contributing $800M. Analysts estimate TSLA's total 2025 revenue at $95B.",
          "entity_to_extract": "TSLA",
-         "item_to_extract": "Analyst Estimates - Revenue"
+         "items_to_extract": "Revenue Impact,Analyst Estimates - Revenue"
        },
-       "output": "$95B"
+       "output": ["$2.5B", "$95B"]
      }
    ]
  }
