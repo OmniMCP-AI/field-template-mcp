@@ -9,7 +9,7 @@ import json
 import logging
 from typing import List, Dict, Any, Optional
 
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -42,15 +42,15 @@ class LLMClient:
         self.openrouter_client = None
         
         if openai_key:
-            self.openai_client = OpenAI(api_key=openai_key)
-        
+            self.openai_client = AsyncOpenAI(api_key=openai_key)
+
         if openrouter_key:
-            self.openrouter_client = OpenAI(
+            self.openrouter_client = AsyncOpenAI(
                 api_key=openrouter_key,
                 base_url="https://openrouter.ai/api/v1"
             )
 
-    def _get_client(self, model: str) -> OpenAI:
+    def _get_client(self, model: str) -> AsyncOpenAI:
         """
         Get appropriate client based on model name.
         
@@ -58,7 +58,7 @@ class LLMClient:
             model: Model name (e.g., "gpt-4o-mini" or "openai/gpt-4o-mini")
         
         Returns:
-            OpenAI client instance
+            AsyncOpenAI client instance
         
         Raises:
             ValueError: If appropriate API key not found
@@ -117,7 +117,7 @@ class LLMClient:
             logger.info("-" * 80)
 
         # Call OpenAI API
-        response = client.chat.completions.create(
+        response = await client.chat.completions.create(
             model=model,
             messages=messages,
             temperature=temperature,
@@ -202,7 +202,7 @@ class LLMClient:
             logger.info(msg['content'])
             logger.info("-" * 80)
 
-        response = client.chat.completions.create(
+        response = await client.chat.completions.create(
             model=model,
             messages=modified_messages,
             temperature=temperature,
