@@ -1,6 +1,6 @@
 {
   "tool_name": "extract",
-  "operation_type": "extraction",
+  "operation_type": "mcptool",
   "description": "Extracts structured data item_to_extract(ONLY support one item only) from unstructured text using advanced LLM semantic understanding and natural language processing. Ideal for parsing documents, forms, emails, articles, or any text to extract specific information like names, dates, amounts, entities, or custom item_to_extract.Only return the extracted value as plain text, nothing else.",
   "category": "extraction",
   "version": "1.0.0",
@@ -29,17 +29,58 @@
       "type": "object",
       "description": "Optional advanced configuration settings to customize extraction behavior, model parameters, and processing options.",
       "properties": {
+        "context": {
+          "type": "object",
+          "description": "Context information about the AI table and sheet being processed",
+          "properties": {
+            "baseId": {
+              "type": "string",
+              "description": "AI表格格唯一标识 (AI table unique identifier)"
+            },
+            "worksheetId": {
+              "type": "string",
+              "description": "数据表 id (data table id)"
+            }
+          }
+        },
         "model": {"type": "string", "description": "Override the default LLM model (gpt-4o-mini). Use more advanced models for complex extractions, technical documents, or domain-specific content requiring deeper reasoning."},
         "temperature": {"type": "number", "description": "Control randomness in extraction (0.0 = deterministic, higher = more interpretive). Default 0.0 recommended for factual data extraction to ensure consistency."},
-        "max_tokens": {"type": "integer", "description": "Maximum tokens for LLM response. Increase for large extracted values or complex text content. Default is 1000 tokens."},
-        "prompt": {"type": "string", "description": "Custom instructions to guide extraction behavior. Use this to clarify field meanings, specify formats (e.g., 'dates in ISO 8601'), handle edge cases, or provide domain context. Example: 'Extract monetary amounts in USD only' or 'For author, use full name format'."}
+        "max_tokens": {"type": "integer", "description": "Maximum tokens for LLM response. Increase for large extracted values or complex text content. Default is 1000 tokens."}
       },
       "required": false
     }
   },
   "output_format": {
-    "type": "string",
-    "description": "The extracted field value as plain text (e.g., 'Jane Doe')"
+    "type": "object",
+    "description": "The extracted field value as plain text (e.g., 'Jane Doe')",
+    "properties": {
+      "code":{"type": "integer", "description": "Status code of the extraction"},
+      "message":{"type": "string", "description": "Status message of the extraction"},
+      "result":{"type": "string", "description": "Result of the extraction"}
+    }
+  },
+  "exectute":{
+    "type": "formula or mcptool",
+    "properties": {
+      "formula": {
+        "code": "Formula code to execute"
+      },
+      "mcptool": {
+        "id": "MCP tool id to execute"
+      },
+      "workflow": {
+        "id": "workflow id to execute"
+      },
+      "agent": {
+        "id": "agent id to execute",
+        "task": ""
+      },
+      "args":{
+        "type": "object",
+        "description": "",
+        "properties": {
+        }
+      }
   },
   "examples": [
     {
