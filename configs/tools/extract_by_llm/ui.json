@@ -1,0 +1,115 @@
+{
+  "fieldType": "text",
+  "fieldConfig": {
+    "type": "text",
+    "autoUpdate": true,
+    "resultPath": "result"
+  },
+  "uiSchema": {
+    "fieldMetaEditor": {
+      "component": "FieldMetaEditor",
+      "props": {
+        "schema": {
+          "items": [
+    {
+      "key": "input",
+      "label": {
+        "en-US": "Source field",
+        "zh-CN": "源字段"
+      },
+      "component": "FieldSelect",
+      "props": {
+        "mode": "single",
+        "supportTypes": ["text", "link"]
+      },
+      "validator": {
+        "required": true
+      },
+      "tooltips": {
+        "title": {
+          "en-US": "Select the field containing the text to extract from",
+          "zh-CN": "选择包含要提取文本的字段"
+        }
+      },
+      "_schemaRef": "inputSchema.properties.input"
+    },
+    {
+      "key": "item_to_extract",
+      "label": {
+        "en-US": "Field to extract",
+        "zh-CN": "要提取的字段"
+      },
+      "component": "Textarea",
+      "props": {
+        "placeholder": {
+          "en-US": "e.g., author, date, amount, email",
+          "zh-CN": "例如：作者、日期、金额、邮箱"
+        },
+        "rows": 2
+      },
+      "validator": {
+        "required": true
+      },
+      "tooltips": {
+        "title": {
+          "en-US": "Describe what information you want to extract",
+          "zh-CN": "描述你想提取的信息"
+        }
+      },
+      "_schemaRef": "inputSchema.properties.item_to_extract"
+    },
+    {
+      "key": "model",
+      "label": {
+        "en-US": "Model",
+        "zh-CN": "模型"
+      },
+      "component": "SingleSelect",
+      "props": {
+        "defaultValue": "gpt-4o-mini",
+        "options": [
+          {
+            "key": "gpt-4o-mini",
+            "title": "GPT-4o Mini (Fast & Cost-effective)"
+          },
+          {
+            "key": "gpt-4o",
+            "title": "GPT-4o (Most Capable)"
+          },
+          {
+            "key": "qwen-3.0-plus",
+            "title": "Qwen 3.0 Plus"
+          },
+          {
+            "key": "qwen-max",
+            "title": "Qwen Max"
+          }
+        ]
+      },
+      "validator": {
+        "required": false
+      },
+      "_schemaRef": "executor_config.model"
+    },
+    {
+      "key": "temperature",
+      "label": {
+        "en-US": "Temperature",
+        "zh-CN": "温度"
+      },
+      "component": "NumberInput",
+      "props": {
+        "defaultValue": 0.0,
+        "step": 0.1
+      },
+      "validator": {
+        "required": false
+      },
+      "_schemaRef": "executor_config.temperature"
+    }
+          ]
+        }
+      }
+    }
+  }
+}

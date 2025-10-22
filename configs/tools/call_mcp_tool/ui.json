@@ -1,0 +1,107 @@
+{
+  "fieldType": "text",
+  "fieldConfig": {
+    "type": "text",
+    "autoUpdate": true,
+    "resultPath": "result"
+  },
+  "uiSchema": {
+    "fieldMetaEditor": {
+      "component": "FieldMetaEditor",
+      "props": {
+        "schema": {
+          "items": [
+    {
+      "key": "source_field",
+      "label": {
+        "en-US": "Source field",
+        "zh-CN": "源字段"
+      },
+      "component": "FieldSelect",
+      "props": {
+        "mode": "single",
+        "supportTypes": ["text", "number", "link"]
+      },
+      "validator": {
+        "required": true
+      },
+      "tooltips": {
+        "title": {
+          "en-US": "Select the field to pass to the MCP tool",
+          "zh-CN": "选择要传递给MCP工具的字段"
+        }
+      },
+      "_schemaRef": "inputSchema.properties.text",
+      "_note": "This maps to the 'text' parameter in the external MCP tool's schema"
+    },
+    {
+      "key": "mcp_server",
+      "label": {
+        "en-US": "MCP Server",
+        "zh-CN": "MCP服务器"
+      },
+      "component": "Textarea",
+      "props": {
+        "placeholder": "mcp://localhost:3000",
+        "rows": 1
+      },
+      "validator": {
+        "required": true,
+        "pattern": "^mcp://.+"
+      },
+      "tooltips": {
+        "title": {
+          "en-US": "MCP server URL (e.g., mcp://localhost:3000)",
+          "zh-CN": "MCP服务器URL（例如：mcp://localhost:3000）"
+        }
+      }
+    },
+    {
+      "key": "tool_name",
+      "label": {
+        "en-US": "Tool Name",
+        "zh-CN": "工具名称"
+      },
+      "component": "Textarea",
+      "props": {
+        "placeholder": "extract_data",
+        "rows": 1
+      },
+      "validator": {
+        "required": true
+      },
+      "tooltips": {
+        "title": {
+          "en-US": "Name of the MCP tool to call",
+          "zh-CN": "要调用的MCP工具名称"
+        }
+      }
+    },
+    {
+      "key": "options",
+      "label": {
+        "en-US": "Tool Options (JSON)",
+        "zh-CN": "工具选项（JSON）"
+      },
+      "component": "Textarea",
+      "props": {
+        "placeholder": "{\"language\": \"auto\"}",
+        "rows": 3
+      },
+      "validator": {
+        "required": false
+      },
+      "tooltips": {
+        "title": {
+          "en-US": "Optional JSON configuration for the tool",
+          "zh-CN": "工具的可选JSON配置"
+        }
+      },
+      "_schemaRef": "inputSchema.properties.options"
+    }
+          ]
+        }
+      }
+    }
+  }
+}

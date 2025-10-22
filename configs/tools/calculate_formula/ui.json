@@ -1,0 +1,129 @@
+{
+  "fieldType": "formula",
+  "fieldConfig": {
+    "type": "text",
+    "autoUpdate": true,
+    "resultPath": "result",
+    "recalculate_on": ["field_change", "row_add"]
+  },
+  "uiSchema": {
+    "fieldMetaEditor": {
+      "component": "FieldMetaEditor",
+      "props": {
+        "schema": {
+          "items": [
+    {
+      "key": "field1",
+      "label": {
+        "en-US": "First field",
+        "zh-CN": "第一个字段"
+      },
+      "component": "FieldSelect",
+      "props": {
+        "mode": "single",
+        "supportTypes": ["text", "number", "date", "createdTime", "updatedTime", "select", "multiSelect"]
+      },
+      "validator": {
+        "required": true
+      },
+      "tooltips": {
+        "title": {
+          "en-US": "Select the first field for comparison or calculation",
+          "zh-CN": "选择用于比较或计算的第一个字段"
+        }
+      }
+    },
+    {
+      "key": "field2",
+      "label": {
+        "en-US": "Second field",
+        "zh-CN": "第二个字段"
+      },
+      "component": "FieldSelect",
+      "props": {
+        "mode": "single",
+        "supportTypes": ["text", "number", "date", "createdTime", "updatedTime", "select", "multiSelect"]
+      },
+      "validator": {
+        "required": false
+      },
+      "tooltips": {
+        "title": {
+          "en-US": "Optional: Select the second field for comparison",
+          "zh-CN": "可选：选择用于比较的第二个字段"
+        }
+      }
+    },
+    {
+      "key": "formula_template",
+      "label": {
+        "en-US": "Formula template",
+        "zh-CN": "公式模板"
+      },
+      "component": "Textarea",
+      "props": {
+        "placeholder": {
+          "en-US": "IF([{$ field1.name $}]>[{$ field2.name $}], \"High\", \"Low\")",
+          "zh-CN": "IF([{$ field1.name $}]>[{$ field2.name $}], \"高\", \"低\")"
+        },
+        "rows": 4,
+        "enableSyntaxHighlight": true,
+        "syntaxType": "nunjucks"
+      },
+      "validator": {
+        "required": true
+      },
+      "tooltips": {
+        "title": {
+          "en-US": "Enter formula using Nunjucks syntax. Use [{$ fieldKey.name $}] to reference fields.",
+          "zh-CN": "使用Nunjucks语法输入公式。使用[{$ fieldKey.name $}]引用字段"
+        }
+      }
+    },
+    {
+      "key": "preview",
+      "label": {
+        "en-US": "Preview",
+        "zh-CN": "预览"
+      },
+      "component": "ReadonlyText",
+      "props": {
+        "placeholder": {
+          "en-US": "Formula preview will appear here after field selection",
+          "zh-CN": "选择字段后，公式预览将显示在这里"
+        }
+      },
+      "_note": "This is a computed field that shows the rendered formula with actual field names"
+    }
+          ]
+        }
+      }
+    }
+  },
+  "formula_builder": {
+    "enabled": true,
+    "presets": [
+      {
+        "name": {
+          "en-US": "Compare two fields",
+          "zh-CN": "比较两个字段"
+        },
+        "template": "IF([{$ field1.name $}]>[{$ field2.name $}], \\\"High\\\", \\\"Low\\\")"
+      },
+      {
+        "name": {
+          "en-US": "Days until deadline",
+          "zh-CN": "距离截止日期天数"
+        },
+        "template": "ROUND([{$ field1.name $}]-TODAY(),0)"
+      },
+      {
+        "name": {
+          "en-US": "Concatenate fields",
+          "zh-CN": "连接字段"
+        },
+        "template": "CONCAT([{$ field1.name $}], \\\" - \\\", [{$ field2.name $}])"
+      }
+    ]
+  }
+}

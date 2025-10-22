@@ -1,0 +1,21 @@
+{
+  "id": "extract_by_llm",
+  "displayName": {
+    "en-US": "Information Extraction",
+    "zh-CN": "信息提取"
+  },
+  "description": {
+    "en-US": "AI extracts information according to specified requirements from unstructured text content.",
+    "zh-CN": "AI根据指定要求从非结构化文本内容中提取信息"
+  },
+  "category": "AI Field",
+  "icon": "🔍",
+  "version": "1.0.0",
+  "provider": "system",
+  "tags": ["extraction", "ai", "llm", "text-processing"],
+  "featured": true,
+  "_refs": {
+    "tool": "./tool.json",
+    "ui": "./ui.json"
+  }
+}

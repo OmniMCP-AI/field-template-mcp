@@ -1,0 +1,21 @@
+{
+  "id": "calculate_formula",
+  "displayName": {
+    "en-US": "Calculate with Formula",
+    "zh-CN": "公式计算"
+  },
+  "description": {
+    "en-US": "Calculate values using spreadsheet-style formulas with field references. Supports IF, AND, OR, arithmetic operations, and more.",
+    "zh-CN": "使用类似电子表格的公式和字段引用计算值。支持IF、AND、OR、算术运算等"
+  },
+  "category": "Efficiency tools",
+  "icon": "🧮",
+  "version": "1.0.0",
+  "provider": "system",
+  "tags": ["formula", "calculation", "spreadsheet"],
+  "featured": true,
+  "_refs": {
+    "tool": "./tool.json",
+    "ui": "./ui.json"
+  }
+}

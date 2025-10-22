@@ -1,0 +1,89 @@
+{
+  "name": "call_mcp_tool",
+  "operation_type": "mcptool",
+  "description": "Calls an external MCP tool server to process data. The inputSchema is dynamically fetched from the MCP server's tools/list endpoint.",
+  "executor_config": {
+    "server_url": "mcp://localhost:3000",
+    "tool_name": "extract_data",
+    "timeout": 30000,
+    "retry": {
+      "enabled": true,
+      "max_attempts": 3,
+      "backoff": "exponential"
+    }
+  },
+  "inputSchema": {
+    "type": "object",
+    "description": "This schema is fetched from the MCP server at runtime. Below is an example.",
+    "_note": "This is a placeholder. Actual schema will be fetched from MCP server's tools/list response.",
+    "properties": {
+      "text": {
+        "type": "string",
+        "description": "Text content to process"
+      },
+      "options": {
+        "type": "object",
+        "description": "Tool-specific options",
+        "properties": {
+          "language": {
+            "type": "string",
+            "enum": ["en", "zh", "auto"]
+          }
+        }
+      },
+      "args": {
+        "type": "object",
+        "description": "Optional runtime context",
+        "properties": {
+          "context": {
+            "type": "object",
+            "description": "Context information about the AI table and sheet being processed",
+            "properties": {
+              "baseId": {
+                "type": "string",
+                "description": "AI table unique identifier"
+              },
+              "worksheetId": {
+                "type": "string",
+                "description": "Data table id"
+              }
+            }
+          }
+        }
+      }
+    },
+    "required": ["text"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "description": "Output schema from MCP tool",
+    "properties": {
+      "result": {
+        "type": "string",
+        "description": "Processed result from MCP tool"
+      },
+      "metadata": {
+        "type": "object",
+        "description": "Optional metadata from tool execution"
+      }
+    }
+  },
+  "examples": [
+    {
+      "description": "Call MCP tool with text input",
+      "input": {
+        "text": "Sample text to process",
+        "options": {
+          "language": "auto"
+        }
+      },
+      "output": {
+        "result": "Processed result",
+        "metadata": {
+          "tool_version": "1.0.0",
+          "execution_time_ms": 120
+        }
+      }
+    }
+  ]
+}

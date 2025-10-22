@@ -1,0 +1,104 @@
+{
+  "name": "extract",
+  "operation_type": "AItool",
+  "description": "Extracts structured data from unstructured text using advanced LLM semantic understanding and natural language processing. Ideal for parsing documents, forms, emails, articles, or any text to extract specific information like names, dates, amounts, entities, or custom fields.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "input": {
+        "type": "string",
+        "description": "Text content to extract data from. Supports any unstructured text including documents, emails, forms, articles, chat transcripts, or web content."
+      },
+      "item_to_extract": {
+        "type": "string",
+        "description": "Single field name to extract from the text (e.g., 'author' or 'date'). Use this for simple extractions where you want just one value."
+      },
+      "args": {
+        "type": "object",
+        "description": "Optional runtime context",
+        "properties": {
+          "context": {
+            "type": "object",
+            "description": "Context information about the AI table and sheet being processed",
+            "properties": {
+              "baseId": {
+                "type": "string",
+                "description": "AI table unique identifier"
+              },
+              "worksheetId": {
+                "type": "string",
+                "description": "Data table id"
+              }
+            }
+          }
+        }
+      }
+    },
+    "required": ["input", "item_to_extract"]
+  },
+  "executor_config": {
+    "model": {
+      "type": "string",
+      "description": "LLM model to use",
+      "enum": ["gpt-4o-mini", "gpt-4o", "qwen-3.0-plus", "qwen-max"],
+      "default": "gpt-4o-mini"
+    },
+    "temperature": {
+      "type": "number",
+      "description": "Control randomness (0.0 = deterministic, higher = more creative)",
+      "default": 0.0
+    },
+    "max_tokens": {
+      "type": "integer",
+      "description": "Maximum tokens for response",
+      "default": 1000
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "result": {
+        "type": "string",
+        "description": "The extracted field value as plain text (e.g., 'Jane Doe')"
+      },
+      "code": {
+        "type": "integer",
+        "description": "Status code of the extraction (0 = success, non-zero = error)"
+      },
+      "message": {
+        "type": "string",
+        "description": "Status message of the extraction"
+      }
+    }
+  },
+  "prompt_templates": {
+    "system": "You are a data extraction expert. Your task is to extract a specific field value from unstructured text.\n\nRules:\n- Extract ONLY the value of the requested field\n- Return ONLY the extracted value as plain text, nothing else\n- Do NOT return JSON, do NOT include the field name\n- If the field is not found, return null\n- Be accurate and precise in extraction\n\nExample:\nField: author\nText: Article by John Smith on 2025-01-15\nExtracted value: John Smith",
+    "user": "Field to extract: {item_to_extract}\n\nText:\n{input}\n\nExtracted value:"
+  },
+  "examples": [
+    {
+      "description": "Extract author name",
+      "input": {
+        "input": "Article by Wade on 2025-10-12 about AI",
+        "item_to_extract": "author"
+      },
+      "output": {
+        "result": "Wade",
+        "code": 0,
+        "message": "success"
+      }
+    },
+    {
+      "description": "Extract date",
+      "input": {
+        "input": "Article by Wade on 2025-10-12 about AI",
+        "item_to_extract": "date"
+      },
+      "output": {
+        "result": "2025-10-12",
+        "code": 0,
+        "message": "success"
+      }
+    }
+  ]
+}

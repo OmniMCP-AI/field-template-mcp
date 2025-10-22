@@ -1,0 +1,21 @@
+{
+  "id": "call_mcp_tool",
+  "displayName": {
+    "en-US": "Call MCP Tool",
+    "zh-CN": "调用MCP工具"
+  },
+  "description": {
+    "en-US": "Call external MCP (Model Context Protocol) tool to process data. Supports any MCP-compatible tool server.",
+    "zh-CN": "调用外部MCP（模型上下文协议）工具处理数据。支持任何兼容MCP的工具服务器"
+  },
+  "category": "Utility",
+  "icon": "🔧",
+  "version": "1.0.0",
+  "provider": "system",
+  "tags": ["mcp", "integration", "external-tool"],
+  "featured": false,
+  "_refs": {
+    "tool": "./tool.json",
+    "ui": "./ui.json"
+  }
+}

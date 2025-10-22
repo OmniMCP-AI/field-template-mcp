@@ -1,0 +1,106 @@
+{
+  "name": "calculate_formula",
+  "operation_type": "formula",
+  "description": "Executes spreadsheet-style formulas using Nunjucks template engine. Supports field references, conditional logic, and arithmetic operations.",
+  "executor_config": {
+    "code": "IF([{$ field1.name $}]>[{$ field2.name $}], \\\"High\\\", \\\"Low\\\")",
+    "engine": {
+      "type": "nunjucks",
+      "version": "3.x",
+      "extensions": {
+        "field_reference": true,
+        "custom_filters": ["round", "abs", "max", "min"]
+      }
+    }
+  },
+  "inputSchema": {
+    "type": "object",
+    "description": "Formula inputs are field references, not direct parameters",
+    "_note": "For formula type, there's no inputSchema validation - formItems define field selections only",
+    "properties": {
+      "args": {
+        "type": "object",
+        "description": "Optional runtime context",
+        "properties": {
+          "context": {
+            "type": "object",
+            "description": "Context information about the AI table and sheet being processed",
+            "properties": {
+              "baseId": {
+                "type": "string",
+                "description": "AI table unique identifier"
+              },
+              "worksheetId": {
+                "type": "string",
+                "description": "Data table id"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "result": {
+        "type": "string",
+        "description": "Calculated formula result"
+      }
+    }
+  },
+  "examples": [
+    {
+      "description": "Compare two number fields",
+      "formData": {
+        "field1": "price",
+        "field2": "cost"
+      },
+      "executor_config": {
+        "code": "IF([{$ field1.name $}]>[{$ field2.name $}], \\\"Profit\\\", \\\"Loss\\\")"
+      },
+      "context": {
+        "currentRow": {
+          "fields": {
+            "price": 100,
+            "cost": 80
+          }
+        }
+      },
+      "output": {
+        "result": "Profit"
+      }
+    },
+    {
+      "description": "Calculate days remaining",
+      "formData": {
+        "deadline": "deadline_date"
+      },
+      "executor_config": {
+        "code": "ROUND([{$ deadline.name $}]-TODAY(),0)"
+      },
+      "context": {
+        "currentRow": {
+          "fields": {
+            "deadline_date": "2025-12-31"
+          }
+        }
+      },
+      "output": {
+        "result": "250"
+      }
+    }
+  ],
+  "supported_functions": [
+    "IF(condition, value_if_true, value_if_false)",
+    "IFS(condition1, value1, condition2, value2, ...)",
+    "AND(expr1, expr2, ...)",
+    "OR(expr1, expr2, ...)",
+    "NOT(expr)",
+    "ISBLANK(field)",
+    "TODAY()",
+    "ROUND(number, decimals)",
+    "CONCAT(str1, str2, ...)",
+    "EXACT(str1, str2)"
+  ]
+}
