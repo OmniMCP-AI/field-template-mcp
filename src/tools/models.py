@@ -78,7 +78,7 @@ class LLMToolTemplate(BaseModel):
     parameters: Dict[str, ParameterDef] = Field(
         description="Input parameter definitions"
     )
-    output_format: Dict[str, Any] = Field(
+    output_schema: Dict[str, Any] = Field(
         description="Expected output JSON schema"
     )
 

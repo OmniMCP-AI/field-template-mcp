@@ -1,0 +1,75 @@
+{
+    "tool_name": "extract",
+    "operation_type": "mcptool",
+    "description": "Extracts structured data item_to_extract(ONLY support one item only) from unstructured text using advanced LLM semantic understanding and natural language processing. Ideal for parsing documents, forms, emails, articles, or any text to extract specific information like names, dates, amounts, entities, or custom item_to_extract.Only return the extracted value as plain text, nothing else.",
+    "category": "extraction",
+    "version": "1.0.0",
+    "prompt_templates": {
+      "system": "You are a data extraction expert. Your task is to extract a specific field value from unstructured text.\n\nRules:\n- Extract ONLY the value of the requested field\n- Return ONLY the extracted value as plain text, nothing else\n- Do NOT return JSON, do NOT include the field name\n- If the field is not found, return null\n- Be accurate and precise in extraction\n\nExample:\nField: author\nText: Article by John Smith on 2025-01-15\nExtracted value: John Smith",
+      "user": "Field to extract: {item_to_extract}\n\nText:\n{text}\n\nExtracted value:"
+    },
+    "input_schema": {
+      "tool_id": {
+        "type": "string",
+        "description": "Text content to extract data from. Supports any unstructured text including documents, emails, forms, articles, chat transcripts, or web content.",
+        "required": true
+      },
+      "tool_args": {
+        "type": "object",
+        "description": "Single field name to extract from the text (e.g., 'author' or 'date'). Use this for simple extractions where you want just one value.",
+        "required": true
+      },
+      "args": {
+        "type": "object",
+        "description": "Optional advanced configuration settings to customize extraction behavior, model parameters, and processing options.",
+        "properties": {
+          "context": {
+            "type": "object",
+            "description": "Context information about the AI table and sheet being processed",
+            "properties": {
+              "baseId": {
+                "type": "string",
+                "description": "AI表格格唯一标识 (AI table unique identifier)"
+              },
+              "worksheetId": {
+                "type": "string",
+                "description": "数据表 id (data table id)"
+              }
+            }
+          },
+          "model": {"type": "string", "description": "Override the default LLM model (gpt-4o-mini). Use more advanced models for complex extractions, technical documents, or domain-specific content requiring deeper reasoning."},
+          "temperature": {"type": "number", "description": "Control randomness in extraction (0.0 = deterministic, higher = more interpretive). Default 0.0 recommended for factual data extraction to ensure consistency."},
+          "max_tokens": {"type": "integer", "description": "Maximum tokens for LLM response. Increase for large extracted values or complex text content. Default is 1000 tokens."}
+        },
+        "required": false
+      }
+    },
+    "output_schema": {
+      "type": "object",
+      "description": "The extracted field value as plain text (e.g., 'Jane Doe')",
+      "properties": {
+        "code":{"type": "integer", "description": "Status code of the extraction"},
+        "message":{"type": "string", "description": "Status message of the extraction"},
+        "result":{"type": "string", "description": "Result of the extraction"}
+      }
+    },
+    "examples": [
+      {
+        "description": "Extract author name",
+        "input": {
+          "input": "Article by Wade on 2025-10-12 about AI",
+          "item_to_extract": "author"
+        },
+        "output": "Wade"
+      },
+      {
+        "description": "Extract date",
+        "input": {
+          "input": "Article by Wade on 2025-10-12 about AI",
+          "item_to_extract": "date"
+        },
+        "output": "2025-10-12"
+      }
+    ]
+  }
+  

@@ -97,11 +97,11 @@ class DynamicToolRegistry:
         Returns:
             JSON Schema for tool outputs
         """
-        output_format = template.get("output_format")
+        output_schema = template.get("output_schema")
 
-        # If output_format is defined, use it (without $schema field for MCP)
-        if output_format:
-            return {**output_format}
+        # If output_schema is defined, use it (without $schema field for MCP)
+        if output_schema:
+            return {**output_schema}
 
         # Default: no validation
         return None

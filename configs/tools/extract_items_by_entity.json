@@ -4,12 +4,6 @@
    "description": "Extracts specific metric or property values for a given entity from unstructured text using advanced LLM semantic understanding. Ideal for extracting financial metrics (EPS, revenue, price targets), entity properties, or time-specific data from documents, reports, articles, or any text content. Returns extracted values as a list of strings.",
    "category": "extraction",
    "version": "1.0.0",
-   "model_config": {
-     "provider": "openai",
-     "model": "openai/gpt-4o-mini",
-     "temperature": 0.0,
-     "max_tokens": 1000
-   },
    "prompt_templates": {
      "system": "You are a data extraction expert specializing in extracting specific metrics and properties for entities from unstructured text.\n\nRules:\n- Extract ONLY the values of the requested properties/metrics for the specified entity\n- Return ONLY the extracted values as a JSON array of strings, nothing else\n- Do NOT include the field names or entity name in the output\n- If a date/time period is specified, extract the value for that specific period only\n- If a property/metric is not found for the entity, use null for that value\n- Be accurate and precise in extraction\n- Handle variations in entity naming (e.g., 'Apple' vs 'AAPL')\n- The order of values in the output array must match the order of requested properties\n\nExample:\nEntity: AAPL\nProperties: EPS, Price Targets - High\nDate: 2024 Q2\nText: Apple (AAPL) reported Q2 2024 EPS of $1.52, beating estimates. Analysts set price targets from $180 to $220.\nExtracted values: [\"$1.52\", \"$220\"]",
      "user": "Entity: {entity_to_extract}\n\nProperties/Metrics to extract: {items_to_extract}\n\n{date}Text:\n{input}\n\nExtracted values:"
@@ -47,7 +41,7 @@
        "required": false
      }
    },
-   "output_format": {
+   "output_schema": {
      "type": "array",
      "items": {
        "type": "string"

@@ -81,12 +81,12 @@ class LLMToolExecutor:
             result = results[0].get("result")
 
             # MCP requires dict wrapping for non-dict types
-            # If output_format is a string type, wrap in dict
-            if self.template.output_format and self.template.output_format.get("type") == "string":
+            # If output_schema is a string type, wrap in dict
+            if self.template.output_schema and self.template.output_schema.get("type") == "string":
                 return {"result": result}
 
-            # If output_format is an array type, wrap in dict
-            if self.template.output_format and self.template.output_format.get("type") == "array":
+            # If output_schema is an array type, wrap in dict
+            if self.template.output_schema and self.template.output_schema.get("type") == "array":
                 return {"result": result}
 
             return result

@@ -43,7 +43,7 @@
       "required": false
     }
   },
-  "output_format": {
+  "output_schema": {
     "type": "string",
     "description": "Comma-separated list of relevant tags applied to the input"
   },
