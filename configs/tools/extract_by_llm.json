@@ -1,6 +1,6 @@
 {
   "tool_name": "extract",
-  "operation_type": "extraction",
+  "operation_type": "AItool",
   "description": "Extracts structured data item_to_extract(ONLY support one item only) from unstructured text using advanced LLM semantic understanding and natural language processing. Ideal for parsing documents, forms, emails, articles, or any text to extract specific information like names, dates, amounts, entities, or custom item_to_extract.Only return the extracted value as plain text, nothing else.",
   "category": "extraction",
   "version": "1.0.0",

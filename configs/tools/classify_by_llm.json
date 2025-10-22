@@ -1,6 +1,6 @@
 {
   "tool_name": "classify",
-  "operation_type": "single_choice",
+  "operation_type": "AItool",
   "description": "Intelligently classifies text content into exactly one best-matching category using advanced LLM semantic understanding. Ideal for content categorization, routing workflows, sentiment analysis, and organizing data by topic, intent, or type. Supports batch processing of multiple items, custom classification instructions, and optional confidence scoring. Each input is assigned to the single most appropriate category from your predefined list.",
   "category": "classification",
   "version": "1.0.0",
