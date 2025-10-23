@@ -1,0 +1,77 @@
+{
+  "name": "tag",
+  "operation_type": "LLMTool",
+  "description": "Applies multiple relevant tags to text content using intelligent LLM semantic analysis. Perfect for content organization, search indexing, filtering, and multi-dimensional categorization where items can belong to several categories simultaneously. Supports batch tagging, tag limits, relevance thresholds, and confidence scoring. Unlike single-category classification, this tool can assign zero to many tags per input based on content relevance.",
+  "executor_config": {
+    "prompt_templates": {
+      "system": "You are a tagging expert. Your task is to apply relevant tags from a predefined list to the given text.\n\nRules:\n- You can apply 0 to N tags per input\n- Only use tags from the provided list (exact match, case-sensitive)\n- Apply all tags that are relevant to the content\n- Return ONLY the tags as a comma-separated list\n- If no tags are relevant, return an empty string\n- Do not include any other text, explanation, or formatting\n\nExample:\nAvailable tags: python, javascript, backend, frontend, database\nText: Building a REST API with FastAPI and PostgreSQL\nRelevant tags: python, backend, database",
+      "user": "Available tags: {tags}\n\nText to tag:\n{input_raw_text}\n\nRelevant tags (comma-separated):"
+    },
+    "model": {
+      "type": "string",
+      "description": "LLM model to use",
+      "enum": ["gpt-4o-mini", "gpt-4o", "qwen-3.0-plus", "qwen-max"],
+      "default": "gpt-4o-mini"
+    },
+    "temperature": {
+      "type": "number",
+      "description": "Control randomness (0.0 = deterministic, higher = more creative)",
+      "default": 0.0
+    },
+    "max_tokens": {
+      "type": "integer",
+      "description": "Maximum tokens for response",
+      "default": 1000
+    }
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "input_raw_text": {
+        "type": "string",
+        "description": "Text content to tag. Supports articles, products, documents, user queries, or any content needing multi-label categorization."
+      },
+      "tags": {
+        "type": "string",
+        "description": "Comma-separated list of available tag options to choose from (minimum 1 required). Tags are non-mutually exclusive - multiple tags can be applied to a single input. Use descriptive tag names like 'python,backend,api,machine-learning' for better semantic matching."
+      },
+      "prompt": {
+        "type": "string",
+        "description": "Optional custom instructions to guide tagging behavior. Use this to specify tagging criteria, define tag meanings, or set relevance standards. Example: 'Only tag programming languages explicitly mentioned' or 'Focus on technical stack, not business domain'."
+      },
+      "args": {
+        "type": "object",
+        "description": "Optional runtime context",
+        "properties": {
+          "context": {
+            "type": "object",
+            "description": "Context information about the AI table and sheet being processed"
+          }
+        }
+      }
+    },
+    "required": ["input_raw_text", "tags"]
+  },
+  "outputSchema": {
+    "type": "string",
+    "description": "Comma-separated list of relevant tags applied to the input"
+  },
+  "examples": [
+    {
+      "description": "Basic tagging",
+      "input": {
+        "input_raw_text": "Python REST API",
+        "tags": "python,javascript,database,backend,frontend"
+      },
+      "output": "python,backend"
+    },
+    {
+      "description": "Another example",
+      "input": {
+        "input_raw_text": "React frontend app",
+        "tags": "python,javascript,database,backend,frontend"
+      },
+      "output": "javascript,frontend"
+    }
+  ]
+}

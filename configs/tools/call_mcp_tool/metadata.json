@@ -13,9 +13,5 @@
   "version": "1.0.0",
   "provider": "system",
   "tags": ["mcp", "integration", "external-tool"],
-  "featured": false,
-  "_refs": {
-    "tool": "./tool.json",
-    "ui": "./ui.json"
-  }
+  "featured": false
 }

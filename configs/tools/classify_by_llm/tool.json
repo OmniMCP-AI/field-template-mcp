@@ -1,0 +1,77 @@
+{
+  "name": "classify",
+  "operation_type": "LLMTool",
+  "description": "Intelligently classifies text content into exactly one best-matching category using advanced LLM semantic understanding. Ideal for content categorization, routing workflows, sentiment analysis, and organizing data by topic, intent, or type. Supports batch processing of multiple items, custom classification instructions, and optional confidence scoring. Each input is assigned to the single most appropriate category from your predefined list.",
+  "executor_config": {
+    "prompt_templates": {
+      "system": "You are a classification expert. Your task is to classify text into exactly ONE category from the provided list.\n\nRules:\n- You MUST choose exactly one category\n- Choose the category that best matches the primary topic or theme\n- If uncertain, choose the most likely category\n- Return ONLY the category name, nothing else\n\nExample:\nCategories: tech, sports, politics\nText: Apple releases new iPhone\nCategory: tech",
+      "user": "Categories: {categories}\n\nText to classify:\n{input_raw_text}\n\nCategory:"
+    },
+    "model": {
+      "type": "string",
+      "description": "LLM model to use",
+      "enum": ["gpt-4o-mini", "gpt-4o", "qwen-3.0-plus", "qwen-max"],
+      "default": "gpt-4o-mini"
+    },
+    "temperature": {
+      "type": "number",
+      "description": "Control randomness (0.0 = deterministic, higher = more creative)",
+      "default": 0.0
+    },
+    "max_tokens": {
+      "type": "integer",
+      "description": "Maximum tokens for response",
+      "default": 1000
+    }
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "input_raw_text": {
+        "type": "string",
+        "description": "Text content to classify. Supports articles, messages, documents, or any text content requiring categorization."
+      },
+      "categories": {
+        "type": "string",
+        "description": "Comma-separated list of mutually exclusive category names to choose from (minimum 2 required). The input will be assigned to exactly one category. Use clear, descriptive category names like 'tech,sports,politics' rather than abbreviations."
+      },
+      "prompt": {
+        "type": "string",
+        "description": "Optional custom instructions to guide classification behavior. Use this to provide domain-specific context, clarify edge cases, or define what distinguishes categories. Example: 'Focus on the main topic, not secondary mentions' or 'Classify by emotional tone: positive, neutral, or negative'."
+      },
+      "args": {
+        "type": "object",
+        "description": "Optional runtime context",
+        "properties": {
+          "context": {
+            "type": "object",
+            "description": "Context information about the AI table and sheet being processed"
+          }
+        }
+      }
+    },
+    "required": ["input_raw_text", "categories"]
+  },
+  "outputSchema": {
+    "type": "string",
+    "description": "The selected category name"
+  },
+  "examples": [
+    {
+      "description": "Basic classification",
+      "input": {
+        "input_raw_text": "Apple releases new iPhone",
+        "categories": "tech,sports,politics"
+      },
+      "output": "tech"
+    },
+    {
+      "description": "Another example",
+      "input": {
+        "input_raw_text": "Lakers win game",
+        "categories": "tech,sports,politics"
+      },
+      "output": "sports"
+    }
+  ]
+}

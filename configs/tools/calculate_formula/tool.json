@@ -6,17 +6,12 @@
     "code": "IF([{$ field1.name $}]>[{$ field2.name $}], \\\"High\\\", \\\"Low\\\")",
     "engine": {
       "type": "nunjucks",
-      "version": "3.x",
-      "extensions": {
-        "field_reference": true,
-        "custom_filters": ["round", "abs", "max", "min"]
-      }
+      "version": "3.x"
     }
   },
   "inputSchema": {
     "type": "object",
     "description": "Formula inputs are field references, not direct parameters",
-    "_note": "For formula type, there's no inputSchema validation - formItems define field selections only",
     "properties": {
       "args": {
         "type": "object",
@@ -24,30 +19,15 @@
         "properties": {
           "context": {
             "type": "object",
-            "description": "Context information about the AI table and sheet being processed",
-            "properties": {
-              "baseId": {
-                "type": "string",
-                "description": "AI table unique identifier"
-              },
-              "worksheetId": {
-                "type": "string",
-                "description": "Data table id"
-              }
-            }
+            "description": "Context information about the AI table and sheet being processed"
           }
         }
       }
     }
   },
   "outputSchema": {
-    "type": "object",
-    "properties": {
-      "result": {
-        "type": "string",
-        "description": "Calculated formula result"
-      }
-    }
+    "type": "string",
+    "description": "Calculated formula result"
   },
   "examples": [
     {
@@ -67,9 +47,7 @@
           }
         }
       },
-      "output": {
-        "result": "Profit"
-      }
+      "output": "Profit"
     },
     {
       "description": "Calculate days remaining",
@@ -86,21 +64,7 @@
           }
         }
       },
-      "output": {
-        "result": "250"
-      }
+      "output": "250"
     }
-  ],
-  "supported_functions": [
-    "IF(condition, value_if_true, value_if_false)",
-    "IFS(condition1, value1, condition2, value2, ...)",
-    "AND(expr1, expr2, ...)",
-    "OR(expr1, expr2, ...)",
-    "NOT(expr)",
-    "ISBLANK(field)",
-    "TODAY()",
-    "ROUND(number, decimals)",
-    "CONCAT(str1, str2, ...)",
-    "EXACT(str1, str2)"
   ]
 }
