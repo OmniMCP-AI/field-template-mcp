@@ -99,7 +99,22 @@ class LLMToolTemplate(BaseModel):
         """
         Convert executor_config structure to the model's expected structure.
 
-        Input tool.json structure:
+        Input tool.json structure (new):
+        {
+          "executor_config": {
+            "prompt_templates": {...},
+            "LLM_config": {
+              "type": "object",
+              "properties": {
+                "max_tokens": {"type": "integer", "default": 1000},
+                "temperature": {"type": "number", "default": 0.0}
+              }
+            }
+          },
+          "inputSchema": {...}
+        }
+
+        Input tool.json structure (legacy):
         {
           "executor_config": {
             "prompt_templates": {...},
@@ -122,22 +137,47 @@ class LLMToolTemplate(BaseModel):
             executor_config = data.get('executor_config', {})
 
             if executor_config:
-                # Extract prompt_templates
+                # Extract prompt_templates and normalize naming
                 if 'prompt_templates' in executor_config:
-                    data['prompt_templates'] = executor_config['prompt_templates']
+                    prompt_templates = executor_config['prompt_templates']
+                    # Normalize field names: system_prompt -> system, user_prompt -> user
+                    normalized_templates = {}
+                    normalized_templates['system'] = prompt_templates.get('system_prompt') or prompt_templates.get('system', '')
+                    normalized_templates['user'] = prompt_templates.get('user_prompt') or prompt_templates.get('user', '')
+                    if 'structured_system' in prompt_templates:
+                        normalized_templates['structured_system'] = prompt_templates['structured_system']
+                    data['prompt_templates'] = normalized_templates
 
-                # Extract model config from parameter definitions (use defaults)
-                llm_config = {}
-                if 'model' in executor_config and isinstance(executor_config['model'], dict):
-                    llm_config['model'] = executor_config['model'].get('default', 'gpt-4o-mini')
-                if 'temperature' in executor_config and isinstance(executor_config['temperature'], dict):
-                    llm_config['temperature'] = executor_config['temperature'].get('default', 0.0)
-                if 'max_tokens' in executor_config and isinstance(executor_config['max_tokens'], dict):
-                    llm_config['max_tokens'] = executor_config['max_tokens'].get('default', 1000)
+                # Extract model config - support both new and legacy structures
+                llm_config = {
+                    'model': 'openai/gpt-4o-mini',  # Default values
+                    'temperature': 0.0,
+                    'max_tokens': 1000
+                }
 
-                # Only set llm_config if we have model config params
-                if llm_config:
-                    data['llm_config'] = llm_config
+                # New structure: LLM_config.properties.*
+                if 'LLM_config' in executor_config and isinstance(executor_config['LLM_config'], dict):
+                    llm_config_spec = executor_config['LLM_config']
+                    properties = llm_config_spec.get('properties', {})
+
+                    if 'model' in properties:
+                        llm_config['model'] = properties['model'].get('default', 'openai/gpt-4o-mini')
+                    if 'temperature' in properties:
+                        llm_config['temperature'] = properties['temperature'].get('default', 0.0)
+                    if 'max_tokens' in properties:
+                        llm_config['max_tokens'] = properties['max_tokens'].get('default', 1000)
+
+                # Legacy structure: direct model/temperature/max_tokens fields
+                elif any(k in executor_config for k in ['model', 'temperature', 'max_tokens']):
+                    if 'model' in executor_config and isinstance(executor_config['model'], dict):
+                        llm_config['model'] = executor_config['model'].get('default', 'openai/gpt-4o-mini')
+                    if 'temperature' in executor_config and isinstance(executor_config['temperature'], dict):
+                        llm_config['temperature'] = executor_config['temperature'].get('default', 0.0)
+                    if 'max_tokens' in executor_config and isinstance(executor_config['max_tokens'], dict):
+                        llm_config['max_tokens'] = executor_config['max_tokens'].get('default', 1000)
+
+                # Set llm_config
+                data['llm_config'] = llm_config
 
             # Convert inputSchema to parameters
             input_schema = data.get('inputSchema', {})

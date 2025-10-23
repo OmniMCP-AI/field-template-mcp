@@ -29,16 +29,6 @@
             "enum": ["en", "zh", "auto"]
           }
         }
-      },
-      "args": {
-        "type": "object",
-        "description": "Optional runtime context",
-        "properties": {
-          "context": {
-            "type": "object",
-            "description": "Context information about the AI table and sheet being processed"
-          }
-        }
       }
     },
     "required": ["text"]
@@ -46,6 +36,10 @@
   "outputSchema": {
     "type": "string",
     "description": "Processed result from MCP tool"
+  },
+  "context": {
+    "type": "object",
+    "description": "Context information about the AI table and sheet being processed"
   },
   "examples": [
     {
