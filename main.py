@@ -56,8 +56,10 @@ for tool_name in tool_registry.template_loader.list_templates():
     description = template.description
 
     # Build function code dynamically
-    # Create parameter list string
-    params_list = []
+    # Create parameter list string - sort to put required params first
+    required_params = []
+    optional_params = []
+
     for param_name, param_def in parameters.items():
         param_type = param_def.type
         is_required = param_def.required
@@ -76,12 +78,14 @@ for tool_name in tool_registry.template_loader.list_templates():
         else:
             type_hint = "Any"
 
-        # Add Optional wrapper if not required
-        if not is_required:
-            params_list.append(f"{param_name}: Optional[{type_hint}] = None")
+        # Separate required and optional parameters
+        if is_required:
+            required_params.append(f"{param_name}: {type_hint}")
         else:
-            params_list.append(f"{param_name}: {type_hint}")
+            optional_params.append(f"{param_name}: Optional[{type_hint}] = None")
 
+    # Combine required first, then optional
+    params_list = required_params + optional_params
     params_str = ", ".join(params_list)
 
     # Build the function dynamically

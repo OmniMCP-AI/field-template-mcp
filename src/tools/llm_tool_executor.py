@@ -1,60 +1,49 @@
 """
-Unified LLM Tool Executor - Executes LLM-based tools from templates.
+Simplified LLM Tool Executor - Executes LLM-based tools from templates.
 
-This module provides a generic execution engine using the Strategy Pattern.
-No if-elif chains - operation type determines which strategy to use.
+Clean, direct implementation focused on prompt formatting and LLM calling.
+Works with the new LLMTool standard from tool.json files.
 """
 
-from typing import Any
+from typing import Any, Dict
 
 from ..services import InputNormalizer, get_llm_client
 from .models import LLMToolTemplate, OperationType
-from .operations import (
-    SingleChoiceOperation,
-    MultiLabelOperation,
-    ExtractionOperation,
-)
 
 
 class LLMToolExecutor:
     """
-    Unified executor using Strategy Pattern.
-    Completely generic - no tool-specific code, no if-elif chains!
+    Simple, direct LLM tool executor.
+    Reads template, formats prompts, calls LLM, returns result.
     """
-
-    # Operation strategy registry - maps operation type to strategy
-    STRATEGIES = {
-        OperationType.SINGLE_CHOICE: SingleChoiceOperation(),
-        OperationType.MULTI_LABEL: MultiLabelOperation(),
-        OperationType.EXTRACTION: ExtractionOperation(),
-    }
 
     def __init__(self, template: LLMToolTemplate):
         """
         Initialize executor with a tool template.
 
         Args:
-            template: Pydantic model with operation type and configuration
+            template: Tool template with prompt templates and config
         """
         self.template = template
 
-        # Select strategy based on operation type - NO if-elif needed!
-        self.strategy = self.STRATEGIES.get(template.operation_type)
-        if not self.strategy:
-            raise ValueError(f"Unknown operation type: {template.operation_type}")
+        # Verify operation type
+        if template.operation_type != OperationType.LLMTOOL:
+            raise ValueError(f"Unsupported operation type: {template.operation_type}")
 
     async def execute(self, **kwargs) -> Any:
         """
-        Execute using appropriate strategy.
+        Execute LLM tool with given parameters.
 
         Args:
-            **kwargs: Tool-specific arguments
+            **kwargs: Tool-specific arguments from inputSchema
 
         Returns:
-            For single string input: returns single result (string or dict)
-            For list input: returns List of {id, result, error?} dicts
+            Result wrapped according to outputSchema type
         """
-        input_data = kwargs.get("input")
+        input_data = kwargs.get("input") or kwargs.get("input_raw_text")
+
+        if not input_data:
+            raise ValueError("Missing required parameter: 'input' or 'input_raw_text'")
 
         # Check if input is a simple string (not a list)
         single_input = isinstance(input_data, str)
@@ -65,30 +54,78 @@ class LLMToolExecutor:
         else:
             normalized = InputNormalizer.normalize(input_data)
 
-        # Validate parameters
-        self.strategy.validate_params(self.template, kwargs)
-
-        # Execute using strategy
-        results = await self.strategy.execute(
-            llm_client=get_llm_client(),
-            template=self.template,
-            normalized_input=normalized,
-            **kwargs
-        )
+        # Process each input
+        results = []
+        for item in normalized:
+            result = await self._execute_single(item["data"], kwargs)
+            results.append({"id": item["id"], "result": result})
 
         # For single string input, return just the result value
         if single_input and len(results) > 0:
             result = results[0].get("result")
 
             # MCP requires dict wrapping for non-dict types
-            # If output_schema is a string type, wrap in dict
             if self.template.output_schema and self.template.output_schema.get("type") == "string":
                 return {"result": result}
 
-            # If output_schema is an array type, wrap in dict
             if self.template.output_schema and self.template.output_schema.get("type") == "array":
                 return {"result": result}
 
             return result
 
         return results
+
+    async def _execute_single(self, input_text: str, params: Dict[str, Any]) -> str:
+        """
+        Execute for a single input text.
+
+        Args:
+            input_text: Input text to process
+            params: All parameters from tool call
+
+        Returns:
+            Result string from LLM
+        """
+        # Get prompt templates
+        system_prompt = self.template.prompt_templates.system
+        user_template = self.template.prompt_templates.user
+
+        # Build format variables from params
+        format_vars = {
+            "input": input_text,
+            "input_raw_text": input_text,
+            "text": input_text,
+        }
+
+        # Add all other parameters for formatting
+        for key, value in params.items():
+            if key not in ["args", "prompt"] and value is not None:
+                format_vars[key] = value
+
+        # Format user prompt
+        try:
+            user_prompt = user_template.format(**format_vars)
+        except KeyError as e:
+            raise ValueError(f"Missing required parameter for prompt template: {e}")
+
+        # Add custom prompt if provided
+        if params.get("prompt"):
+            system_prompt += f"\n\n{params['prompt']}"
+
+        # Get model configuration
+        args = params.get("args") or {}
+        model = args.get("model", self.template.llm_config.model)
+        temperature = args.get("temperature", self.template.llm_config.temperature)
+
+        # Call LLM
+        llm_client = get_llm_client()
+        response = await llm_client.chat(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            model=model,
+            temperature=temperature
+        )
+
+        return response.strip()

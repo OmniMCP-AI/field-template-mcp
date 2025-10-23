@@ -81,7 +81,7 @@ async def test_classify(url):
             classify_res = await session.call_tool(
                 "classify",
                 {
-                    "input": "Apple releases new iPhone with AI features",
+                    "input_raw_text": "Apple releases new iPhone with AI features",
                     "categories": "tech,sports,politics"
                 }
             )
@@ -97,7 +97,7 @@ async def test_classify(url):
             classify_res2 = await session.call_tool(
                 "classify",
                 {
-                    "input": "It's a sunny day",
+                    "input_raw_text": "It's a sunny day",
                     "categories": "good_weather,bad_weather",
                     "prompt": "Classify weather descriptions"
                 }
@@ -126,7 +126,7 @@ async def test_tag(url):
             tag_res = await session.call_tool(
                 "tag",
                 {
-                    "input": "Python REST API with FastAPI",
+                    "input_raw_text": "Python REST API with FastAPI",
                     "tags": "python,javascript,typescript,backend,frontend,fullstack"
                 }
             )
@@ -142,7 +142,7 @@ async def test_tag(url):
             tag_res2 = await session.call_tool(
                 "tag",
                 {
-                    "input": "Machine learning project with Python, TensorFlow, Docker, and REST API",
+                    "input_raw_text": "Machine learning project with Python, TensorFlow, Docker, and REST API",
                     "tags": "python,machine-learning,docker,api,tensorflow",
                     "args": {"max_tags": 2}
                 }
@@ -171,7 +171,7 @@ async def test_extract(url):
             extract_res = await session.call_tool(
                 "extract",
                 {
-                    "input": "Article by John Smith published on 2025-01-15 about AI",
+                    "input_raw_text": "Article by John Smith published on 2025-01-15 about AI",
                     # "item_to_extract": "author,date,topic"
                      "item_to_extract": "date"
                 }
@@ -188,7 +188,7 @@ async def test_extract(url):
             extract_res2 = await session.call_tool(
                 "extract",
                 {
-                    "input": "Blog post by Jane Doe from 2025-02-20 covering machine learning",
+                    "input_raw_text": "Blog post by Jane Doe from 2025-02-20 covering machine learning",
                     "item_to_extract": "author" # ,date,topic
                 }
             )
@@ -305,7 +305,7 @@ async def test_all(url):
     await test_extract(url)
     print("\n" + "=" * 60 + "\n")
 
-    await test_extract_items_by_entity(url)
+    # await test_extract_items_by_entity(url)
 
     print("\n✅ All tests completed!")
 

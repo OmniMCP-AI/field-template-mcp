@@ -33,14 +33,48 @@ class TemplateLoader:
         self._load_all_templates()
 
     def _load_all_templates(self):
-        """Load all JSON templates with Pydantic validation."""
+        """
+        Load all JSON templates with Pydantic validation.
+
+        Searches for tool.json files in subdirectories (new structure)
+        and *.json files in root (legacy structure).
+
+        Only loads tools with operation_type="LLMTool".
+        """
         if not self.templates_dir.exists():
             raise FileNotFoundError(f"Templates directory not found: {self.templates_dir}")
 
+        # Load from subdirectories (new structure: tool_name/tool.json)
+        for subdir in self.templates_dir.iterdir():
+            if subdir.is_dir():
+                tool_json = subdir / "tool.json"
+                if tool_json.exists():
+                    try:
+                        with open(tool_json, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+
+                        # Skip non-LLMTool types
+                        if data.get('operation_type') != 'LLMTool':
+                            print(f"Info: Skipping non-LLMTool template: {tool_json}")
+                            continue
+
+                        # Pydantic validation - automatic type checking!
+                        template = LLMToolTemplate.model_validate(data)
+                        self._templates[template.tool_name] = template
+
+                    except Exception as e:
+                        print(f"Warning: Failed to load template {tool_json}: {e}")
+
+        # Also load legacy *.json files from root directory
         for json_file in self.templates_dir.glob("*.json"):
             try:
                 with open(json_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
+
+                # Skip non-LLMTool types
+                if data.get('operation_type') != 'LLMTool':
+                    print(f"Info: Skipping non-LLMTool template: {json_file.name}")
+                    continue
 
                 # Pydantic validation - automatic type checking!
                 template = LLMToolTemplate.model_validate(data)
