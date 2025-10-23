@@ -16,6 +16,7 @@ def extract_by_llm():
     Fixture that provides the extract_by_llm function.
     """
     from src.tools.extract_by_llm import extract_by_llm
+
     return extract_by_llm
 
 
@@ -26,8 +27,7 @@ class TestExtractByLLMBasic:
     async def test_extract_author(self, extract_by_llm):
         """Test extracting author field."""
         result = await extract_by_llm(
-            input="Article by Wade on 2025-10-12 about AI",
-            item_to_extract="author"
+            input="Article by Wade on 2025-10-12 about AI", item_to_extract="author"
         )
 
         # Result should be a plain string
@@ -38,8 +38,7 @@ class TestExtractByLLMBasic:
     async def test_extract_date(self, extract_by_llm):
         """Test extracting date field."""
         result = await extract_by_llm(
-            input="Article by Wade on 2025-10-12 about AI",
-            item_to_extract="date"
+            input="Article by Wade on 2025-10-12 about AI", item_to_extract="date"
         )
 
         assert isinstance(result, str)
@@ -50,7 +49,7 @@ class TestExtractByLLMBasic:
         """Test extracting topic field."""
         result = await extract_by_llm(
             input="Blog post about machine learning published yesterday",
-            item_to_extract="topic"
+            item_to_extract="topic",
         )
 
         assert isinstance(result, str)
@@ -66,7 +65,9 @@ class TestExtractByLLMWithArgs:
         result = await extract_by_llm(
             input="Article by John Doe with contributions from Jane Smith and Bob Wilson",
             item_to_extract="primary_author",
-            args={"prompt": "Extract only the primary author (first mentioned), not co-authors"}
+            args={
+                "prompt": "Extract only the primary author (first mentioned), not co-authors"
+            },
         )
 
         assert isinstance(result, str)
@@ -90,8 +91,7 @@ class TestExtractByLLMErrorHandling:
     async def test_unicode_content(self, extract_by_llm):
         """Test extraction with unicode content."""
         result = await extract_by_llm(
-            input="文章作者：张三，日期：2025-10-12",
-            item_to_extract="author"
+            input="文章作者：张三，日期：2025-10-12", item_to_extract="author"
         )
 
         assert isinstance(result, str)

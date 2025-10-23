@@ -42,7 +42,9 @@ class TemplateLoader:
         Only loads tools with operation_type="LLMTool".
         """
         if not self.templates_dir.exists():
-            raise FileNotFoundError(f"Templates directory not found: {self.templates_dir}")
+            raise FileNotFoundError(
+                f"Templates directory not found: {self.templates_dir}"
+            )
 
         # Load from subdirectories (new structure: tool_name/tool.json)
         for subdir in self.templates_dir.iterdir():
@@ -50,11 +52,11 @@ class TemplateLoader:
                 tool_json = subdir / "tool.json"
                 if tool_json.exists():
                     try:
-                        with open(tool_json, 'r', encoding='utf-8') as f:
+                        with open(tool_json, "r", encoding="utf-8") as f:
                             data = json.load(f)
 
                         # Skip non-LLMTool types
-                        if data.get('operation_type') != 'LLMTool':
+                        if data.get("operation_type") != "LLMTool":
                             print(f"Info: Skipping non-LLMTool template: {tool_json}")
                             continue
 
@@ -68,11 +70,11 @@ class TemplateLoader:
         # Also load legacy *.json files from root directory
         for json_file in self.templates_dir.glob("*.json"):
             try:
-                with open(json_file, 'r', encoding='utf-8') as f:
+                with open(json_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
 
                 # Skip non-LLMTool types
-                if data.get('operation_type') != 'LLMTool':
+                if data.get("operation_type") != "LLMTool":
                     print(f"Info: Skipping non-LLMTool template: {json_file.name}")
                     continue
 

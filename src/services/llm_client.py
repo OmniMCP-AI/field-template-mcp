@@ -4,10 +4,10 @@ LLM Client service using OpenAI API.
 Supports OpenAI and OpenAI-compatible APIs.
 """
 
-import os
 import json
 import logging
-from typing import List, Dict, Any, Optional
+import os
+from typing import Any, Dict, List, Optional
 
 from openai import AsyncOpenAI
 
@@ -29,44 +29,45 @@ class LLMClient:
             ValueError: If API key is missing
         """
         self.provider = "openai"
-        
+
         # Check if we have API keys available
         openai_key = os.getenv("OPENAI_API_KEY")
         openrouter_key = os.getenv("OPENROUTER_API_KEY")
-        
+
         if not openai_key and not openrouter_key:
             raise ValueError("Either OPENAI_API_KEY or OPENROUTER_API_KEY must be set")
 
         # Initialize client (will be set per-request based on model)
         self.openai_client = None
         self.openrouter_client = None
-        
+
         if openai_key:
             self.openai_client = AsyncOpenAI(api_key=openai_key)
 
         if openrouter_key:
             self.openrouter_client = AsyncOpenAI(
-                api_key=openrouter_key,
-                base_url="https://openrouter.ai/api/v1"
+                api_key=openrouter_key, base_url="https://openrouter.ai/api/v1"
             )
 
     def _get_client(self, model: str) -> AsyncOpenAI:
         """
         Get appropriate client based on model name.
-        
+
         Args:
             model: Model name (e.g., "gpt-4o-mini" or "openai/gpt-4o-mini")
-        
+
         Returns:
             AsyncOpenAI client instance
-        
+
         Raises:
             ValueError: If appropriate API key not found
         """
         # If model contains "/", use OpenRouter
         if "/" in model:
             if not self.openrouter_client:
-                raise ValueError("OPENROUTER_API_KEY not set but model requires OpenRouter")
+                raise ValueError(
+                    "OPENROUTER_API_KEY not set but model requires OpenRouter"
+                )
             return self.openrouter_client
         else:
             if not self.openai_client:
@@ -78,7 +79,7 @@ class LLMClient:
         messages: List[Dict[str, str]],
         model: Optional[str] = None,
         temperature: float = 0.0,
-        max_tokens: int = 1000
+        max_tokens: int = 1000,
     ) -> str:
         """
         Send chat request to LLM and return text response.
@@ -109,11 +110,13 @@ class LLMClient:
 
         # Log the prompt being sent
         logger.info("=" * 80)
-        logger.info(f"📤 LLM REQUEST | Model: {model} | Temperature: {temperature} | Max Tokens: {max_tokens}")
+        logger.info(
+            f"📤 LLM REQUEST | Model: {model} | Temperature: {temperature} | Max Tokens: {max_tokens}"
+        )
         logger.info("-" * 80)
         for i, msg in enumerate(messages, 1):
             logger.info(f"Message {i} [{msg['role'].upper()}]:")
-            logger.info(msg['content'])
+            logger.info(msg["content"])
             logger.info("-" * 80)
 
         # Call OpenAI API
@@ -121,16 +124,16 @@ class LLMClient:
             model=model,
             messages=messages,
             temperature=temperature,
-            max_tokens=max_tokens
+            max_tokens=max_tokens,
         )
-        
+
         response_content = response.choices[0].message.content
-        
+
         # Log the response
-        logger.info(f"📥 LLM RESPONSE:")
+        logger.info("📥 LLM RESPONSE:")
         logger.info(response_content)
         logger.info("=" * 80)
-        
+
         return response_content
 
     async def structured_output(
@@ -138,7 +141,7 @@ class LLMClient:
         messages: List[Dict[str, str]],
         schema: Dict[str, Any],
         model: Optional[str] = None,
-        temperature: float = 0.0
+        temperature: float = 0.0,
     ) -> Dict[str, Any]:
         """
         Get structured JSON output from LLM.
@@ -179,40 +182,45 @@ class LLMClient:
 
         for msg in messages:
             if msg["role"] == "system":
-                modified_messages.append({
-                    "role": "system",
-                    "content": msg["content"] + schema_instruction
-                })
+                modified_messages.append(
+                    {"role": "system", "content": msg["content"] + schema_instruction}
+                )
                 system_found = True
             else:
                 modified_messages.append(msg)
 
         if not system_found:
-            modified_messages.insert(0, {
-                "role": "system",
-                "content": "You are a helpful assistant that outputs valid JSON." + schema_instruction
-            })
+            modified_messages.insert(
+                0,
+                {
+                    "role": "system",
+                    "content": "You are a helpful assistant that outputs valid JSON."
+                    + schema_instruction,
+                },
+            )
 
         # Log the prompt being sent
         logger.info("=" * 80)
-        logger.info(f"📤 LLM STRUCTURED REQUEST | Model: {model} | Temperature: {temperature}")
+        logger.info(
+            f"📤 LLM STRUCTURED REQUEST | Model: {model} | Temperature: {temperature}"
+        )
         logger.info("-" * 80)
         for i, msg in enumerate(modified_messages, 1):
             logger.info(f"Message {i} [{msg['role'].upper()}]:")
-            logger.info(msg['content'])
+            logger.info(msg["content"])
             logger.info("-" * 80)
 
         response = await client.chat.completions.create(
             model=model,
             messages=modified_messages,
             temperature=temperature,
-            response_format={"type": "json_object"}
+            response_format={"type": "json_object"},
         )
 
         response_content = response.choices[0].message.content
-        
+
         # Log the response
-        logger.info(f"📥 LLM STRUCTURED RESPONSE:")
+        logger.info("📥 LLM STRUCTURED RESPONSE:")
         logger.info(response_content)
         logger.info("=" * 80)
 
@@ -248,7 +256,7 @@ def get_llm_client(provider: Optional[str] = None) -> LLMClient:
         # Check for at least one API key
         openai_key = os.getenv("OPENAI_API_KEY")
         openrouter_key = os.getenv("OPENROUTER_API_KEY")
-        
+
         if not openai_key and not openrouter_key:
             raise ValueError("Either OPENAI_API_KEY or OPENROUTER_API_KEY must be set")
 

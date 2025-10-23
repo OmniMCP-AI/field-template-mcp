@@ -16,6 +16,7 @@ def classify_by_llm():
     Fixture that provides the classify_by_llm function.
     """
     from src.tools.classify_by_llm import classify_by_llm
+
     return classify_by_llm
 
 
@@ -27,7 +28,7 @@ class TestClassifyByLLMBasic:
         """Test basic single input classification."""
         result = await classify_by_llm(
             input="What to know about Trump's $20B bailout for Argentina",
-            categories="entertainment,economy,policy,sports"
+            categories="entertainment,economy,policy,sports",
         )
 
         # Verify result is a string
@@ -40,8 +41,7 @@ class TestClassifyByLLMBasic:
     async def test_simple_classification(self, classify_by_llm):
         """Test simple classification."""
         result = await classify_by_llm(
-            input="Apple releases new iPhone",
-            categories="tech,sports,politics"
+            input="Apple releases new iPhone", categories="tech,sports,politics"
         )
 
         assert isinstance(result, str)
@@ -52,8 +52,7 @@ class TestClassifyByLLMBasic:
     async def test_another_classification(self, classify_by_llm):
         """Test another classification."""
         result = await classify_by_llm(
-            input="Lakers win game",
-            categories="tech,sports,politics"
+            input="Lakers win game", categories="tech,sports,politics"
         )
 
         assert isinstance(result, str)
@@ -69,7 +68,7 @@ class TestClassifyByLLMWithPrompt:
         result = await classify_by_llm(
             input="Article mentions both AI and policy but focuses on regulation",
             categories="tech,policy,business",
-            prompt="Classify based on the primary focus, not just mentions"
+            prompt="Classify based on the primary focus, not just mentions",
         )
 
         assert isinstance(result, str)
@@ -85,7 +84,7 @@ class TestClassifyByLLMErrorHandling:
         with pytest.raises(ValueError, match="at least 2 categories"):
             await classify_by_llm(
                 input="Some content",
-                categories="tech"  # Only 1 category
+                categories="tech",  # Only 1 category
             )
 
     @pytest.mark.asyncio
@@ -102,7 +101,7 @@ class TestClassifyByLLMErrorHandling:
         """Test with unicode and special characters."""
         result = await classify_by_llm(
             input="科技新闻 (Tech news in Chinese)",
-            categories="tech,business,food,space"
+            categories="tech,business,food,space",
         )
 
         assert isinstance(result, str)

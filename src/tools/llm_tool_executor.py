@@ -32,7 +32,10 @@ class LLMToolExecutor:
             raise ValueError(f"Unsupported operation type: {template.operation_type}")
 
         # Extract template placeholders from user_prompt
-        user_template = getattr(template.prompt_templates, 'user_prompt', None) or template.prompt_templates.user
+        user_template = (
+            getattr(template.prompt_templates, "user_prompt", None)
+            or template.prompt_templates.user
+        )
         self.template_placeholders = self._extract_placeholders(user_template)
 
     def _extract_placeholders(self, template_str: str) -> Set[str]:
@@ -46,7 +49,7 @@ class LLMToolExecutor:
             Set of placeholder names
         """
         # Find all {placeholder} patterns
-        pattern = r'\{([^}]+)\}'
+        pattern = r"\{([^}]+)\}"
         matches = re.findall(pattern, template_str)
         return set(matches)
 
@@ -73,7 +76,9 @@ class LLMToolExecutor:
                 break
 
         if not input_data:
-            raise ValueError(f"Missing required input parameter. Expected one of: {self.template_placeholders}")
+            raise ValueError(
+                f"Missing required input parameter. Expected one of: {self.template_placeholders}"
+            )
 
         # Check if input is a simple string (not a list)
         single_input = isinstance(input_data, str)
@@ -95,17 +100,25 @@ class LLMToolExecutor:
             result = results[0].get("result")
 
             # MCP requires dict wrapping for non-dict types
-            if self.template.output_schema and self.template.output_schema.get("type") == "string":
+            if (
+                self.template.output_schema
+                and self.template.output_schema.get("type") == "string"
+            ):
                 return {"result": result}
 
-            if self.template.output_schema and self.template.output_schema.get("type") == "array":
+            if (
+                self.template.output_schema
+                and self.template.output_schema.get("type") == "array"
+            ):
                 return {"result": result}
 
             return result
 
         return results
 
-    async def _execute_single(self, input_text: str, input_param_name: str, params: Dict[str, Any]) -> str:
+    async def _execute_single(
+        self, input_text: str, input_param_name: str, params: Dict[str, Any]
+    ) -> str:
         """
         Execute for a single input text.
 
@@ -119,8 +132,12 @@ class LLMToolExecutor:
         """
         # Get prompt templates - support both naming conventions
         prompt_templates = self.template.prompt_templates
-        system_prompt = getattr(prompt_templates, 'system_prompt', None) or prompt_templates.system
-        user_template = getattr(prompt_templates, 'user_prompt', None) or prompt_templates.user
+        system_prompt = (
+            getattr(prompt_templates, "system_prompt", None) or prompt_templates.system
+        )
+        user_template = (
+            getattr(prompt_templates, "user_prompt", None) or prompt_templates.user
+        )
 
         # Build format variables from template placeholders only
         format_vars = {}
@@ -130,7 +147,11 @@ class LLMToolExecutor:
 
         # Add all other parameters that are in template placeholders
         for key, value in params.items():
-            if key in self.template_placeholders and key not in ["args", "prompt", "LLM_config"] and value is not None:
+            if (
+                key in self.template_placeholders
+                and key not in ["args", "prompt", "LLM_config"]
+                and value is not None
+            ):
                 # Skip the main input param as we already added it
                 if key != input_param_name:
                     format_vars[key] = value
@@ -167,11 +188,11 @@ class LLMToolExecutor:
         response = await llm_client.chat(
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": user_prompt},
             ],
             model=model,
             temperature=temperature,
-            max_tokens=max_tokens
+            max_tokens=max_tokens,
         )
 
         return response.strip()

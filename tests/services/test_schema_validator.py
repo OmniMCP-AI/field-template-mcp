@@ -4,7 +4,6 @@ Test cases for schema_validator.py
 Tests JSON Schema validation, nested objects, type checking, and error feedback.
 """
 
-import pytest
 from src.services.schema_validator import SchemaValidator, validate_output
 
 
@@ -15,10 +14,7 @@ class TestSchemaValidatorBasic:
         """Test valid simple object."""
         schema = {
             "type": "object",
-            "properties": {
-                "name": {"type": "string"},
-                "age": {"type": "number"}
-            }
+            "properties": {"name": {"type": "string"}, "age": {"type": "number"}},
         }
         data = {"name": "John", "age": 30}
 
@@ -30,10 +26,7 @@ class TestSchemaValidatorBasic:
         """Test invalid type."""
         schema = {
             "type": "object",
-            "properties": {
-                "name": {"type": "string"},
-                "age": {"type": "number"}
-            }
+            "properties": {"name": {"type": "string"}, "age": {"type": "number"}},
         }
         data = {"name": "John", "age": "thirty"}  # age should be number
 
@@ -46,11 +39,8 @@ class TestSchemaValidatorBasic:
         """Test missing required field."""
         schema = {
             "type": "object",
-            "properties": {
-                "name": {"type": "string"},
-                "age": {"type": "number"}
-            },
-            "required": ["name"]
+            "properties": {"name": {"type": "string"}, "age": {"type": "number"}},
+            "required": ["name"],
         }
         data = {"age": 30}  # missing required 'name'
 
@@ -62,11 +52,8 @@ class TestSchemaValidatorBasic:
         """Test with all required fields present."""
         schema = {
             "type": "object",
-            "properties": {
-                "name": {"type": "string"},
-                "age": {"type": "number"}
-            },
-            "required": ["name"]
+            "properties": {"name": {"type": "string"}, "age": {"type": "number"}},
+            "required": ["name"],
         }
         data = {"name": "John"}  # age is optional
 
@@ -87,18 +74,12 @@ class TestSchemaValidatorNestedObjects:
                     "type": "object",
                     "properties": {
                         "age": {"type": "number"},
-                        "email": {"type": "string"}
-                    }
-                }
-            }
+                        "email": {"type": "string"},
+                    },
+                },
+            },
         }
-        data = {
-            "name": "John",
-            "details": {
-                "age": 30,
-                "email": "john@example.com"
-            }
-        }
+        data = {"name": "John", "details": {"age": 30, "email": "john@example.com"}}
 
         valid, error = SchemaValidator.validate(data, schema)
         assert valid is True
@@ -112,17 +93,15 @@ class TestSchemaValidatorNestedObjects:
                 "name": {"type": "string"},
                 "details": {
                     "type": "object",
-                    "properties": {
-                        "age": {"type": "number"}
-                    }
-                }
-            }
+                    "properties": {"age": {"type": "number"}},
+                },
+            },
         }
         data = {
             "name": "John",
             "details": {
                 "age": "invalid"  # should be number
-            }
+            },
         }
 
         valid, error = SchemaValidator.validate(data, schema)
@@ -137,12 +116,7 @@ class TestSchemaValidatorArrays:
         """Test valid string array."""
         schema = {
             "type": "object",
-            "properties": {
-                "tags": {
-                    "type": "array",
-                    "items": {"type": "string"}
-                }
-            }
+            "properties": {"tags": {"type": "array", "items": {"type": "string"}}},
         }
         data = {"tags": ["python", "javascript", "go"]}
 
@@ -153,12 +127,7 @@ class TestSchemaValidatorArrays:
         """Test invalid array items."""
         schema = {
             "type": "object",
-            "properties": {
-                "tags": {
-                    "type": "array",
-                    "items": {"type": "string"}
-                }
-            }
+            "properties": {"tags": {"type": "array", "items": {"type": "string"}}},
         }
         data = {"tags": ["python", 123, "go"]}  # 123 is not a string
 
@@ -176,18 +145,13 @@ class TestSchemaValidatorArrays:
                         "type": "object",
                         "properties": {
                             "name": {"type": "string"},
-                            "age": {"type": "number"}
-                        }
-                    }
+                            "age": {"type": "number"},
+                        },
+                    },
                 }
-            }
+            },
         }
-        data = {
-            "users": [
-                {"name": "John", "age": 30},
-                {"name": "Jane", "age": 25}
-            ]
-        }
+        data = {"users": [{"name": "John", "age": 30}, {"name": "Jane", "age": 25}]}
 
         valid, error = SchemaValidator.validate(data, schema)
         assert valid is True
@@ -200,9 +164,7 @@ class TestSchemaValidatorNullable:
         """Test nullable field with null value."""
         schema = {
             "type": "object",
-            "properties": {
-                "name": {"type": ["string", "null"]}
-            }
+            "properties": {"name": {"type": ["string", "null"]}},
         }
         data = {"name": None}
 
@@ -213,9 +175,7 @@ class TestSchemaValidatorNullable:
         """Test nullable field with actual value."""
         schema = {
             "type": "object",
-            "properties": {
-                "name": {"type": ["string", "null"]}
-            }
+            "properties": {"name": {"type": ["string", "null"]}},
         }
         data = {"name": "John"}
 
@@ -228,8 +188,8 @@ class TestSchemaValidatorNullable:
             "type": "object",
             "properties": {
                 "name": {"type": ["string", "null"]},
-                "age": {"type": "number"}
-            }
+                "age": {"type": "number"},
+            },
         }
 
         assert SchemaValidator.supports_nullable(schema, "name") is True
@@ -246,9 +206,9 @@ class TestSchemaValidatorHelpers:
             "properties": {
                 "name": {"type": "string"},
                 "age": {"type": "number"},
-                "email": {"type": "string"}
+                "email": {"type": "string"},
             },
-            "required": ["name", "email"]
+            "required": ["name", "email"],
         }
 
         required = SchemaValidator.get_required_fields(schema)
@@ -259,12 +219,7 @@ class TestSchemaValidatorHelpers:
 
     def test_get_required_fields_empty(self):
         """Test schema with no required fields."""
-        schema = {
-            "type": "object",
-            "properties": {
-                "name": {"type": "string"}
-            }
-        }
+        schema = {"type": "object", "properties": {"name": {"type": "string"}}}
 
         required = SchemaValidator.get_required_fields(schema)
         assert len(required) == 0
@@ -273,10 +228,7 @@ class TestSchemaValidatorHelpers:
         """Test detailed validation results."""
         schema = {
             "type": "object",
-            "properties": {
-                "name": {"type": "string"},
-                "age": {"type": "number"}
-            }
+            "properties": {"name": {"type": "string"}, "age": {"type": "number"}},
         }
         data = {"name": 123, "age": "invalid"}
 
@@ -293,7 +245,7 @@ class TestSchemaValidatorErrorFeedback:
         """Test error feedback message generation."""
         errors = [
             {"path": "age", "message": "'invalid' is not of type 'number'"},
-            {"path": "email", "message": "'bad-email' is not valid"}
+            {"path": "email", "message": "'bad-email' is not valid"},
         ]
 
         feedback = SchemaValidator.create_error_feedback({}, {}, errors)
@@ -311,7 +263,7 @@ class TestValidateOutputConvenience:
         """Test convenience function with valid data."""
         valid, error = validate_output(
             {"name": "John"},
-            {"type": "object", "properties": {"name": {"type": "string"}}}
+            {"type": "object", "properties": {"name": {"type": "string"}}},
         )
         assert valid is True
         assert error is None
@@ -320,7 +272,7 @@ class TestValidateOutputConvenience:
         """Test convenience function with invalid data."""
         valid, error = validate_output(
             {"name": 123},
-            {"type": "object", "properties": {"name": {"type": "string"}}}
+            {"type": "object", "properties": {"name": {"type": "string"}}},
         )
         assert valid is False
         assert error is not None
@@ -336,19 +288,16 @@ class TestComplexSchemas:
             "properties": {
                 "penalty_amount": {"type": ["number", "null"]},
                 "delivery_date": {"type": ["string", "null"], "format": "date"},
-                "parties": {
-                    "type": "array",
-                    "items": {"type": "string"}
-                }
+                "parties": {"type": "array", "items": {"type": "string"}},
             },
-            "required": ["parties"]
+            "required": ["parties"],
         }
 
         # Valid data
         data = {
             "penalty_amount": 5000.00,
             "delivery_date": "2025-12-31",
-            "parties": ["Company A", "Company B"]
+            "parties": ["Company A", "Company B"],
         }
         valid, error = SchemaValidator.validate(data, schema)
         assert valid is True
@@ -357,7 +306,7 @@ class TestComplexSchemas:
         data_with_nulls = {
             "penalty_amount": None,
             "delivery_date": None,
-            "parties": ["Company A"]
+            "parties": ["Company A"],
         }
         valid, error = SchemaValidator.validate(data_with_nulls, schema)
         assert valid is True
@@ -365,7 +314,7 @@ class TestComplexSchemas:
         # Missing required field
         data_missing = {
             "penalty_amount": 5000.00,
-            "delivery_date": "2025-12-31"
+            "delivery_date": "2025-12-31",
             # missing 'parties'
         }
         valid, error = SchemaValidator.validate(data_missing, schema)

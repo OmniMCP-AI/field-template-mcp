@@ -5,8 +5,9 @@ Validates LLM outputs against JSON Schema Draft 7 specifications.
 Supports nested objects, type constraints, and advanced validation rules.
 """
 
+from typing import Any, Dict, Optional, Tuple
+
 import jsonschema
-from typing import Dict, Any, Optional, Tuple
 
 
 class SchemaValidator:
@@ -83,19 +84,19 @@ class SchemaValidator:
         errors = []
 
         for error in validator.iter_errors(data):
-            error_path = " -> ".join(str(p) for p in error.path) if error.path else "root"
-            errors.append({
-                "path": error_path,
-                "message": error.message,
-                "validator": error.validator,
-                "value": error.instance
-            })
+            error_path = (
+                " -> ".join(str(p) for p in error.path) if error.path else "root"
+            )
+            errors.append(
+                {
+                    "path": error_path,
+                    "message": error.message,
+                    "validator": error.validator,
+                    "value": error.instance,
+                }
+            )
 
-        return {
-            "valid": len(errors) == 0,
-            "errors": errors,
-            "data": data
-        }
+        return {"valid": len(errors) == 0, "errors": errors, "data": data}
 
     @staticmethod
     def get_required_fields(schema: Dict[str, Any]) -> list[str]:
@@ -164,9 +165,7 @@ class SchemaValidator:
 
     @staticmethod
     def create_error_feedback(
-        data: Any,
-        schema: Dict[str, Any],
-        validation_errors: list[dict]
+        data: Any, schema: Dict[str, Any], validation_errors: list[dict]
     ) -> str:
         """
         Generate human-readable error feedback for LLM retry.
@@ -185,21 +184,20 @@ class SchemaValidator:
             >>> "age" in feedback
             True
         """
-        feedback_lines = [
-            "The previous response had validation errors:",
-            ""
-        ]
+        feedback_lines = ["The previous response had validation errors:", ""]
 
         for error in validation_errors:
             path = error.get("path", "unknown")
             message = error.get("message", "validation error")
             feedback_lines.append(f"- Field '{path}': {message}")
 
-        feedback_lines.extend([
-            "",
-            "Please provide a corrected response that matches the schema exactly.",
-            "Pay attention to data types (string, number, array, object, boolean, null)."
-        ])
+        feedback_lines.extend(
+            [
+                "",
+                "Please provide a corrected response that matches the schema exactly.",
+                "Pay attention to data types (string, number, array, object, boolean, null).",
+            ]
+        )
 
         return "\n".join(feedback_lines)
 

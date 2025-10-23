@@ -32,10 +32,9 @@ Environment Variables Required:
 - LLM_MODEL (optional, default: gpt-4o-mini)
 """
 
-import asyncio
-import json
-import os
 import argparse
+import asyncio
+import os
 
 from dotenv import load_dotenv
 from mcp import ClientSession
@@ -64,7 +63,7 @@ async def test_list_tools(url):
                 print(f"      Output Schema: {tool.outputSchema}")
                 print()
 
-            print("✅ Tool discovery test completed!\n")  
+            print("✅ Tool discovery test completed!\n")
 
 
 async def test_classify(url):
@@ -82,14 +81,18 @@ async def test_classify(url):
                 "classify",
                 {
                     "input_raw_text": "Apple releases new iPhone with AI features",
-                    "categories": "tech,sports,politics"
-                }
+                    "categories": "tech,sports,politics",
+                },
             )
 
             if classify_res.isError:
-                print(f"❌ Error: {classify_res.content[0].text if classify_res.content else 'Unknown error'}")
+                print(
+                    f"❌ Error: {classify_res.content[0].text if classify_res.content else 'Unknown error'}"
+                )
             else:
-                result_text = classify_res.content[0].text if classify_res.content else None
+                result_text = (
+                    classify_res.content[0].text if classify_res.content else None
+                )
                 print(f"✅ Result: {result_text}")
 
             # Test 2: Classify with custom prompt
@@ -99,14 +102,18 @@ async def test_classify(url):
                 {
                     "input_raw_text": "It's a sunny day",
                     "categories": "good_weather,bad_weather",
-                    "prompt": "Classify weather descriptions"
-                }
+                    "prompt": "Classify weather descriptions",
+                },
             )
 
             if classify_res2.isError:
-                print(f"❌ Error: {classify_res2.content[0].text if classify_res2.content else 'Unknown error'}")
+                print(
+                    f"❌ Error: {classify_res2.content[0].text if classify_res2.content else 'Unknown error'}"
+                )
             else:
-                result_text = classify_res2.content[0].text if classify_res2.content else None
+                result_text = (
+                    classify_res2.content[0].text if classify_res2.content else None
+                )
                 print(f"✅ Result: {result_text}")
 
             print("\n✅ classify tool test completed!")
@@ -127,12 +134,14 @@ async def test_tag(url):
                 "tag",
                 {
                     "input_raw_text": "Python REST API with FastAPI",
-                    "tags": "python,javascript,typescript,backend,frontend,fullstack"
-                }
+                    "tags": "python,javascript,typescript,backend,frontend,fullstack",
+                },
             )
 
             if tag_res.isError:
-                print(f"❌ Error: {tag_res.content[0].text if tag_res.content else 'Unknown error'}")
+                print(
+                    f"❌ Error: {tag_res.content[0].text if tag_res.content else 'Unknown error'}"
+                )
             else:
                 result_text = tag_res.content[0].text if tag_res.content else None
                 print(f"✅ Result: {result_text}")
@@ -144,12 +153,14 @@ async def test_tag(url):
                 {
                     "input_raw_text": "Machine learning project with Python, TensorFlow, Docker, and REST API",
                     "tags": "python,machine-learning,docker,api,tensorflow",
-                    "args": {"max_tags": 2}
-                }
+                    "args": {"max_tags": 2},
+                },
             )
 
             if tag_res2.isError:
-                print(f"❌ Error: {tag_res2.content[0].text if tag_res2.content else 'Unknown error'}")
+                print(
+                    f"❌ Error: {tag_res2.content[0].text if tag_res2.content else 'Unknown error'}"
+                )
             else:
                 result_text = tag_res2.content[0].text if tag_res2.content else None
                 print(f"✅ Result: {result_text} (max 2 tags)")
@@ -173,14 +184,18 @@ async def test_extract(url):
                 {
                     "input_raw_text": "Article by John Smith published on 2025-01-15 about AI",
                     # "item_to_extract": "author,date,topic"
-                     "item_to_extract": "date"
-                }
+                    "item_to_extract": "date",
+                },
             )
 
             if extract_res.isError:
-                print(f"❌ Error: {extract_res.content[0].text if extract_res.content else 'Unknown error'}")
+                print(
+                    f"❌ Error: {extract_res.content[0].text if extract_res.content else 'Unknown error'}"
+                )
             else:
-                result_text = extract_res.content[0].text if extract_res.content else None
+                result_text = (
+                    extract_res.content[0].text if extract_res.content else None
+                )
                 print(f"✅ Result: {result_text}")
 
             # Test 2: Extract another example
@@ -189,14 +204,18 @@ async def test_extract(url):
                 "extract",
                 {
                     "input_raw_text": "Blog post by Jane Doe from 2025-02-20 covering machine learning",
-                    "item_to_extract": "author" # ,date,topic
-                }
+                    "item_to_extract": "author",  # ,date,topic
+                },
             )
 
             if extract_res2.isError:
-                print(f"❌ Error: {extract_res2.content[0].text if extract_res2.content else 'Unknown error'}")
+                print(
+                    f"❌ Error: {extract_res2.content[0].text if extract_res2.content else 'Unknown error'}"
+                )
             else:
-                result_text = extract_res2.content[0].text if extract_res2.content else None
+                result_text = (
+                    extract_res2.content[0].text if extract_res2.content else None
+                )
                 print(f"✅ Result: {result_text}")
 
             print("\n✅ extract tool test completed!")
@@ -208,8 +227,10 @@ async def test_extract_items_by_entity(url):
     print("=" * 60)
 
     # Read the Tesla article
-    test_article_path = os.path.join(os.path.dirname(__file__), "test-tesla-article.txt")
-    with open(test_article_path, 'r') as f:
+    test_article_path = os.path.join(
+        os.path.dirname(__file__), "test-tesla-article.txt"
+    )
+    with open(test_article_path, "r") as f:
         tesla_article = f.read()
 
     async with streamable_http.streamablehttp_client(url) as (read, write, _):
@@ -223,12 +244,14 @@ async def test_extract_items_by_entity(url):
                 {
                     "input": tesla_article,
                     "entity_to_extract": "Tesla",
-                    "items_to_extract": "EVs sold globally"
-                }
+                    "items_to_extract": "EVs sold globally",
+                },
             )
 
             if result1.isError:
-                print(f"❌ Error: {result1.content[0].text if result1.content else 'Unknown error'}")
+                print(
+                    f"❌ Error: {result1.content[0].text if result1.content else 'Unknown error'}"
+                )
             else:
                 result_text = result1.content[0].text if result1.content else None
                 print(f"✅ Result: {result_text}")
@@ -240,12 +263,14 @@ async def test_extract_items_by_entity(url):
                 {
                     "input": tesla_article,
                     "entity_to_extract": "Tesla",
-                    "items_to_extract": "EVs sold globally,renewable energy usage"
-                }
+                    "items_to_extract": "EVs sold globally,renewable energy usage",
+                },
             )
 
             if result2.isError:
-                print(f"❌ Error: {result2.content[0].text if result2.content else 'Unknown error'}")
+                print(
+                    f"❌ Error: {result2.content[0].text if result2.content else 'Unknown error'}"
+                )
             else:
                 result_text = result2.content[0].text if result2.content else None
                 print(f"✅ Result: {result_text}")
@@ -258,12 +283,14 @@ async def test_extract_items_by_entity(url):
                     "input": tesla_article,
                     "entity_to_extract": "Tesla",
                     "items_to_extract": "battery recycling throughput growth",
-                    "date": "2024"
-                }
+                    "date": "2024",
+                },
             )
 
             if result3.isError:
-                print(f"❌ Error: {result3.content[0].text if result3.content else 'Unknown error'}")
+                print(
+                    f"❌ Error: {result3.content[0].text if result3.content else 'Unknown error'}"
+                )
             else:
                 result_text = result3.content[0].text if result3.content else None
                 print(f"✅ Result: {result_text}")
@@ -275,12 +302,14 @@ async def test_extract_items_by_entity(url):
                 {
                     "input": tesla_article,
                     "entity_to_extract": "Tesla",
-                    "items_to_extract": "water use per vehicle,CO2 emissions avoided"
-                }
+                    "items_to_extract": "water use per vehicle,CO2 emissions avoided",
+                },
             )
 
             if result4.isError:
-                print(f"❌ Error: {result4.content[0].text if result4.content else 'Unknown error'}")
+                print(
+                    f"❌ Error: {result4.content[0].text if result4.content else 'Unknown error'}"
+                )
             else:
                 result_text = result4.content[0].text if result4.content else None
                 print(f"✅ Result: {result_text}")
@@ -330,9 +359,9 @@ def main():
         default="all",
         help="Which test to run",
     )
-    
+
     args = parser.parse_args()
-    
+
     # Determine URL
     if args.env == "local":
         # FastMCP streamable-http uses /mcp endpoint
@@ -344,10 +373,10 @@ def main():
             print("❌ Error: --url required for remote environment")
             return
         url = args.url
-    
+
     print(f"🔗 Using {args.env} environment: {url}")
     print(f"🧪 Running test: {args.test}\n")
-    
+
     # Run selected test
     if args.test == "all":
         asyncio.run(test_all(url))

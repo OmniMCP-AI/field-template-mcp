@@ -11,7 +11,6 @@ From SPECIFICATION.md:
 """
 
 import pytest
-from typing import List, Dict, Any, Union
 
 
 @pytest.fixture
@@ -20,6 +19,7 @@ def input_normalizer():
     Fixture that provides the InputNormalizer class.
     """
     from src.services.input_normalizer import InputNormalizer
+
     return InputNormalizer
 
 
@@ -57,7 +57,7 @@ class TestInputNormalizerBasic:
         input_data = [
             {"id": "custom_1", "data": "text1"},
             {"id": 0, "data": "text2"},
-            {"id": "article_1", "data": "text3"}
+            {"id": "article_1", "data": "text3"},
         ]
         result = input_normalizer.normalize(input_data)
 
@@ -105,7 +105,7 @@ class TestInputNormalizerMixedFormats:
             "First article",  # Simple string → id: 0
             {"id": "custom_1", "data": "Second article"},  # Dict preserved
             "Third article",  # Simple string → id: 1
-            {"id": 99, "data": "Fourth article"}  # Dict preserved
+            {"id": 99, "data": "Fourth article"},  # Dict preserved
         ]
         result = input_normalizer.normalize(input_data)
 
@@ -134,7 +134,7 @@ class TestInputNormalizerMixedFormats:
             {"id": "skip", "data": "item"},  # custom id
             "item1",  # id: 1 (not 2, because dict doesn't count)
             {"id": "skip2", "data": "item"},  # custom id
-            "item2"  # id: 2
+            "item2",  # id: 2
         ]
         result = input_normalizer.normalize(input_data)
 
@@ -199,14 +199,7 @@ class TestInputNormalizerTypeHandling:
 
         From SPECIFICATION.md: "Type flexibility: Support heterogeneous input types"
         """
-        input_data = [
-            "string",
-            123,
-            45.67,
-            True,
-            None,
-            {"nested": "dict"}
-        ]
+        input_data = ["string", 123, 45.67, True, None, {"nested": "dict"}]
         result = input_normalizer.normalize(input_data)
 
         assert len(result) == 6
@@ -317,10 +310,7 @@ class TestInputNormalizerEdgeCases:
 
         This might be allowed or might raise error depending on implementation.
         """
-        input_data = [
-            {"id": "dup", "data": "first"},
-            {"id": "dup", "data": "second"}
-        ]
+        input_data = [{"id": "dup", "data": "first"}, {"id": "dup", "data": "second"}]
 
         # Implementation might allow duplicates or raise error
         try:
@@ -338,7 +328,7 @@ class TestInputNormalizerEdgeCases:
         input_data = [
             {"id": None, "data": "text1"},  # None as ID
             {"id": [], "data": "text2"},  # List as ID
-            {"id": {}, "data": "text3"}  # Dict as ID
+            {"id": {}, "data": "text3"},  # Dict as ID
         ]
 
         # Should either auto-assign IDs or raise error
@@ -376,7 +366,7 @@ class TestInputNormalizerPreserveOrder:
             "first",
             {"id": "custom", "data": "second"},
             "third",
-            {"id": 99, "data": "fourth"}
+            {"id": 99, "data": "fourth"},
         ]
         result = input_normalizer.normalize(input_data)
 
@@ -390,7 +380,7 @@ class TestInputNormalizerPreserveOrder:
         input_data = [
             {"id": "z", "data": "Last alphabetically"},
             {"id": "a", "data": "First alphabetically"},
-            {"id": "m", "data": "Middle alphabetically"}
+            {"id": "m", "data": "Middle alphabetically"},
         ]
         result = input_normalizer.normalize(input_data)
 

@@ -12,14 +12,14 @@ Example:
 """
 
 import re
-from typing import Dict, List, Any, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 
 class FieldResolver:
     """Resolves field references in prompt templates."""
 
     # Pattern to match {$field_name}
-    FIELD_REFERENCE_PATTERN = r'\{\$(\w+)\}'
+    FIELD_REFERENCE_PATTERN = r"\{\$(\w+)\}"
 
     @staticmethod
     def extract_field_references(prompt: str) -> List[str]:
@@ -106,7 +106,9 @@ class FieldResolver:
         return resolved
 
     @staticmethod
-    def validate_fields(prompt: str, available_fields: Dict[str, Any]) -> tuple[bool, List[str]]:
+    def validate_fields(
+        prompt: str, available_fields: Dict[str, Any]
+    ) -> tuple[bool, List[str]]:
         """
         Check if all field references in prompt are available.
 
@@ -156,7 +158,7 @@ class FieldResolver:
     def resolve_dict_fields(
         data: Dict[str, Any],
         inputs: Dict[str, Any],
-        fields_to_resolve: Optional[List[str]] = None
+        fields_to_resolve: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
         Resolve field references in dictionary values.
@@ -224,7 +226,9 @@ def extract_field_references(prompt: str) -> List[str]:
     return FieldResolver.extract_field_references(prompt)
 
 
-def resolve_field_references(prompt: str, inputs: Dict[str, Any], default: str = "") -> str:
+def resolve_field_references(
+    prompt: str, inputs: Dict[str, Any], default: str = ""
+) -> str:
     """Convenience function for resolving field references."""
     return FieldResolver.resolve(prompt, inputs, default)
 

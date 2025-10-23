@@ -1,12 +1,13 @@
 import argparse
 import logging
-import os
 import sys
 from importlib import metadata
+from typing import Any, Optional
 
 from dotenv import load_dotenv
 from fastmcp import FastMCP
-from openai import OpenAI
+
+from src.tools.dynamic_registry import get_tool_registry
 
 # Load environment variables from .env file
 load_dotenv()
@@ -21,29 +22,6 @@ logging.getLogger("src.services.llm_client").setLevel(logging.INFO)
 
 # Initialize FastMCP server
 mcp = FastMCP("AI Field Template MCP Server")
-
-# Initialize OpenAI client (kept for backward compatibility, tools use their own LLM client)
-openai_client = None
-try:
-    api_key = os.getenv("OPENAI_API_KEY")
-    base_url = os.getenv("OPENAI_BASE_URL")  # Optional, for OpenRouter or custom endpoints
-
-    if api_key:
-        if base_url:
-            openai_client = OpenAI(api_key=api_key, base_url=base_url)
-        else:
-            openai_client = OpenAI(api_key=api_key)
-        logger.info("OpenAI client initialized successfully")
-    else:
-        logger.info("OPENAI_API_KEY not found. Tools will use ANTHROPIC_API_KEY if available.")
-except Exception as e:
-    logger.error(f"Failed to initialize OpenAI client: {e}")
-
-
-# Import dynamic tool registry
-from src.tools.dynamic_registry import get_tool_registry
-import inspect
-from typing import Optional, Any
 
 # Initialize dynamic tool registry and load all JSON templates
 tool_registry = get_tool_registry()
@@ -97,19 +75,19 @@ async def {tool_name}({params_str}):
 
     # Execute the function definition
     exec_globals = {
-        'tool_registry': tool_registry,
-        'Optional': Optional,
-        'Any': Any,
-        'list': list,
-        'dict': dict,
-        'str': str,
-        'bool': bool,
-        'int': int
+        "tool_registry": tool_registry,
+        "Optional": Optional,
+        "Any": Any,
+        "list": list,
+        "dict": dict,
+        "str": str,
+        "bool": bool,
+        "int": int,
     }
     exec(func_code, exec_globals)
 
     # Get the created function and register it with output schema
-    tool_func = exec_globals[f'{tool_name}']
+    tool_func = exec_globals[f"{tool_name}"]
 
     # Get output schema from template
     output_schema = template.output_schema
@@ -120,16 +98,12 @@ async def {tool_name}({params_str}):
             # But keep description to indicate the actual return type
             output_schema = {
                 "type": "object",
-                "properties": {
-                    "result": output_schema
-                },
+                "properties": {"result": output_schema},
                 "required": ["result"],
-                "description": f"Returns: {output_schema.get('description', output_schema.get('type'))}"
+                "description": f"Returns: {output_schema.get('description', output_schema.get('type'))}",
             }
         else:
-            output_schema = {
-                **output_schema
-            }
+            output_schema = {**output_schema}
         mcp.tool(output_schema=output_schema)(tool_func)
     else:
         mcp.tool()(tool_func)
@@ -169,7 +143,9 @@ def main():
         print(f"   🔗 URL: http://0.0.0.0:{args.port}")
     print(f"   🐍 Python: {sys.version.split()[0]}")
     # Dynamically list loaded tools
-    tool_names = ", ".join([f"{name}" for name in tool_registry.template_loader.list_templates()])
+    tool_names = ", ".join(
+        [f"{name}" for name in tool_registry.template_loader.list_templates()]
+    )
     print(f"   🛠️  Tools: {tool_names}")
     print("")
 

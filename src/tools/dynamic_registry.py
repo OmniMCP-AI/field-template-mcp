@@ -2,9 +2,10 @@
 Dynamic Tool Registry - Manages dynamic MCP tool registration from JSON templates.
 """
 
-from typing import Dict, Any, List, Callable
-from .template_loader import get_template_loader
+from typing import Any, Callable, Dict, List
+
 from .llm_tool_executor import LLMToolExecutor
+from .template_loader import get_template_loader
 
 
 class DynamicToolRegistry:
@@ -58,7 +59,7 @@ class DynamicToolRegistry:
         for param_name, param_def in parameters.items():
             prop = {
                 "type": param_def.get("type", "string"),
-                "description": param_def.get("description", "")
+                "description": param_def.get("description", ""),
             }
 
             # Add additional schema properties
@@ -79,7 +80,7 @@ class DynamicToolRegistry:
         schema = {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
-            "properties": properties
+            "properties": properties,
         }
 
         if required:
@@ -148,7 +149,7 @@ class DynamicToolRegistry:
             tool_def = {
                 "name": self._generate_mcp_tool_name(template),
                 "description": self._build_description(template),
-                "inputSchema": self._build_input_schema(template)
+                "inputSchema": self._build_input_schema(template),
             }
 
             # Optionally include output schema
@@ -190,6 +191,7 @@ class DynamicToolRegistry:
         Returns:
             Async function that executes the tool
         """
+
         async def tool_function(**kwargs):
             return await self.call_tool(name, kwargs)
 

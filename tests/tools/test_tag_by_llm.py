@@ -16,6 +16,7 @@ def tag_by_llm():
     Fixture that provides the tag_by_llm function.
     """
     from src.tools.tag_by_llm import tag_by_llm
+
     return tag_by_llm
 
 
@@ -27,7 +28,7 @@ class TestTagByLLMBasic:
         """Test basic tagging returning multiple tags."""
         result = await tag_by_llm(
             input="Building a REST API with Python and PostgreSQL",
-            tags="AI,backend,frontend,database,operations"
+            tags="AI,backend,frontend,database,operations",
         )
 
         assert isinstance(result, str)
@@ -47,8 +48,7 @@ class TestTagByLLMBasic:
     async def test_simple_tagging(self, tag_by_llm):
         """Test simple tagging."""
         result = await tag_by_llm(
-            input="Python REST API",
-            tags="python,javascript,database,backend,frontend"
+            input="Python REST API", tags="python,javascript,database,backend,frontend"
         )
 
         assert isinstance(result, str)
@@ -62,7 +62,7 @@ class TestTagByLLMBasic:
         """Test that no matching tags returns empty string."""
         result = await tag_by_llm(
             input="Article about gardening and flowers",
-            tags="AI,backend,frontend,database"
+            tags="AI,backend,frontend,database",
         )
 
         assert isinstance(result, str)
@@ -78,7 +78,7 @@ class TestTagByLLMWithPrompt:
         result = await tag_by_llm(
             input="Building a machine learning API with FastAPI and deploying to AWS",
             tags="python,AI,backend,frontend,cloud,database",
-            prompt="Tag based on the main technologies and domains involved"
+            prompt="Tag based on the main technologies and domains involved",
         )
 
         result_tags = [t.strip() for t in result.split(",") if t.strip()]
@@ -107,7 +107,7 @@ class TestTagByLLMErrorHandling:
         """Test with unicode characters."""
         result = await tag_by_llm(
             input="机器学习和人工智能 (Machine Learning and AI)",
-            tags="AI,机器学习,backend,数据库"
+            tags="AI,机器学习,backend,数据库",
         )
 
         assert isinstance(result, str)

@@ -14,7 +14,7 @@ Examples:
         ["text", {"id": "custom", "data": "text2"}] → [{"id": 0, "data": "text"}, {"id": "custom", "data": "text2"}]
 """
 
-from typing import List, Dict, Any, Union
+from typing import Any, Dict, List
 
 
 class InputNormalizer:

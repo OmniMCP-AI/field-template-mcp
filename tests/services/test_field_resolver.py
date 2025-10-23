@@ -4,8 +4,11 @@ Test cases for field_resolver.py
 Tests field reference extraction, resolution, and validation.
 """
 
-import pytest
-from src.services.field_resolver import FieldResolver, extract_field_references, resolve_field_references
+from src.services.field_resolver import (
+    FieldResolver,
+    extract_field_references,
+    resolve_field_references,
+)
 
 
 class TestFieldReferenceExtraction:
@@ -140,7 +143,10 @@ class TestFieldReferenceDetection:
         """Test no field references."""
         assert FieldResolver.has_field_references("Simple prompt") is False
         assert FieldResolver.has_field_references("") is False
-        assert FieldResolver.has_field_references("Use {brackets} but not field refs") is False
+        assert (
+            FieldResolver.has_field_references("Use {brackets} but not field refs")
+            is False
+        )
 
 
 class TestDictFieldResolution:
@@ -148,11 +154,7 @@ class TestDictFieldResolution:
 
     def test_resolve_dict_all_fields(self):
         """Test resolving all string fields in dict."""
-        data = {
-            "prompt": "Name: {$name}",
-            "title": "User: {$user}",
-            "count": 5
-        }
+        data = {"prompt": "Name: {$name}", "title": "User: {$user}", "count": 5}
         inputs = {"name": "John", "user": "john123"}
         resolved = FieldResolver.resolve_dict_fields(data, inputs)
 
@@ -162,12 +164,11 @@ class TestDictFieldResolution:
 
     def test_resolve_dict_specific_fields(self):
         """Test resolving only specific fields."""
-        data = {
-            "prompt": "Name: {$name}",
-            "title": "User: {$user}"
-        }
+        data = {"prompt": "Name: {$name}", "title": "User: {$user}"}
         inputs = {"name": "John", "user": "john123"}
-        resolved = FieldResolver.resolve_dict_fields(data, inputs, fields_to_resolve=["prompt"])
+        resolved = FieldResolver.resolve_dict_fields(
+            data, inputs, fields_to_resolve=["prompt"]
+        )
 
         assert resolved["prompt"] == "Name: John"
         assert resolved["title"] == "User: {$user}"  # Not resolved
